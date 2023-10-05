@@ -67,7 +67,8 @@ class GtpConnection:
             "gogui-rules_board": self.gogui_rules_board_cmd,
             "gogui-analyze_commands": self.gogui_analyze_cmd,
             "timelimit": self.timelimit_cmd,
-            "solve": self.solve_cmd
+            "solve": self.solve_cmd,
+            "undoMove": self.undoMove
         }
 
         # argmap is used for argument checking
@@ -389,6 +390,8 @@ class GtpConnection:
         """ Implement this function for Assignment 2 """
         pass
 
+    def undoMove(self, args: List[str]) -> None:
+        self.board.undo()
     """
     ==========================================================================
     Assignment 1 - game-specific commands end here
