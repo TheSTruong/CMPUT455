@@ -392,7 +392,6 @@ class GtpConnection:
         """ Implement this function for Assignment 2 """
         root = self.board.copy()
         tt = TransTable()
-        negamaxBoolean(root, tt)
 
     def undoMove(self, args: List[str]) -> None:
         self.board.undoMove()
