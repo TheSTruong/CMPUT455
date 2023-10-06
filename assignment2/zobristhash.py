@@ -1,14 +1,52 @@
 import random
-
+from board_base import (
+    BLACK,
+    WHITE,
+    EMPTY,
+    BORDER,
+    GO_COLOR, GO_POINT,
+    PASS,
+    MAXSIZE,
+    coord_to_point,
+    opponent
+)
 
 class ZobristHash:
-    def __init__(self, boardSize):
+    def __init__(self, boardSize, gameState):
         self.index = boardSize * boardSize
-        self.array = [[random.getrandbits(64) for j in range(3)]
-                      for i in range(self.index)]
+        self.zArray = []
+        for _ in range(self.index):
+            self.zArray.append([random.getrandbits(64) for _ in range(3)])
+        print(self.index)
+        print(len(self.zArray))
+        print(self.zArray[0])
+        #<---Calculate the initial hash value of the board (ignores borders)--->
+        self.hash = 0 
+        count = 0 
+        for point in gameState.board:
+            if point != BORDER:
+                if count == 0:
+                    self.hash = self.zArray[count][point]
+                else:
+                    self.hash = self.hash ^ self.zArray[count][point]
+                count += 1
+        print(self.hash)
 
-    def hash(self, board):
-        code = self.array[0][board[0]]
-        for i in range(1, self.index):
-            code = code ^ self.array[i][board[i]]
-        return code
+    # Computes the hash value of a given board
+    def computeHash(self, gameState):
+        count = 0 
+        hash = 0
+        for point in gameState.board:
+            if point == BORDER:
+                print("BORDER")
+            if point != BORDER:
+                if count == 0:
+                    hash = self.zArray[count][point]
+                else:
+                    hash = hash ^ self.zArray[count][point]
+                count += 1
+        return hash
+
+            
+
+    

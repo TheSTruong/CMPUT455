@@ -91,8 +91,3 @@ class GoBoardUtil(object):
             board2d[row, :] = go_board.board[start : start + size]
         board2d = np.flipud(board2d)
         return board2d
-    
-    @staticmethod
-    def get_oneD_board(goboard):
-        board2d = GoBoardUtil.get_twoD_board(goboard)
-        return board2d.flatten()

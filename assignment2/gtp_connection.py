@@ -13,8 +13,8 @@ import numpy as np
 import re
 from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
-from solver import negamaxBoolean
 from TranspositionTable import TransTable
+from zobristhash import ZobristHash
 
 from board_base import (
     BLACK,
@@ -46,6 +46,7 @@ class GtpConnection:
         self._debug_mode: bool = debug_mode
         self.go_engine = go_engine
         self.board: GoBoard = board
+
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
             "quit": self.quit_cmd,
@@ -392,6 +393,7 @@ class GtpConnection:
         """ Implement this function for Assignment 2 """
         root = self.board.copy()
         tt = TransTable()
+        hasher = ZobristHash(self.board.size, root)
 
     def undoMove(self, args: List[str]) -> None:
         self.board.undoMove()
