@@ -331,6 +331,7 @@ class GoBoard(object):
                     self.black_captures += 2
                 else:
                     self.white_captures += 2
+        #Need to tweak later for previous scores.
         self.boardStack.append("Marker")
         return True
     
@@ -404,8 +405,16 @@ class GoBoard(object):
     def undo(self):
         if self.boardStack != [] and self.boardStack[-1] == "Marker":
             self.boardStack.pop()
+        scoreCount = -1
         while(self.boardStack != [] and self.boardStack[-1] != "Marker"):
+            scoreCount += 1
             point, pColor = self.boardStack.pop()
+
             self.board[point] = pColor
             self.current_player = opponent(self.current_player)
+        if scoreCount >= 2:
+            if self.current_player == BLACK:
+                self.black_captures -= scoreCount
+            elif self.current_player == WHITE:
+                self.white_captures -= scoreCount
             
