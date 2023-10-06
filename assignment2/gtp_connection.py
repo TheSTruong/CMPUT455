@@ -13,6 +13,8 @@ import numpy as np
 import re
 from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
+from solver import negamaxBoolean
+from TranspositionTable import TransTable
 
 from board_base import (
     BLACK,
@@ -388,10 +390,12 @@ class GtpConnection:
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
-        pass
+        root = self.board.copy()
+        tt = TransTable()
+        negamaxBoolean(root, tt)
 
     def undoMove(self, args: List[str]) -> None:
-        self.board.undo()
+        self.board.undoMove()
     """
     ==========================================================================
     Assignment 1 - game-specific commands end here

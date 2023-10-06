@@ -1,4 +1,4 @@
-class TranspositionTable(object):
+class TransTable(object):
 # Table is stored in a dictionary, with board code as key, 
 # and minimax score as the value
 

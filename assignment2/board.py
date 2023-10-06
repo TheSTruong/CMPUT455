@@ -402,7 +402,7 @@ class GoBoard(object):
                 return prev
         return EMPTY
     
-    def undo(self):
+    def undoMove(self):
         if self.boardStack != [] and self.boardStack[-1] == "Marker":
             self.boardStack.pop()
         scoreCount = -1
