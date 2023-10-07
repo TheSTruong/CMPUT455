@@ -46,6 +46,7 @@ class GtpConnection:
         self._debug_mode: bool = debug_mode
         self.go_engine = go_engine
         self.board: GoBoard = board
+        self.hasher = ZobristHash(self.board.size)
 
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
@@ -164,6 +165,7 @@ class GtpConnection:
         Reset the board to empty board of given size
         """
         self.board.reset(size)
+        self.hasher = ZobristHash(size)
 
     def board2d(self) -> str:
         return str(GoBoardUtil.get_twoD_board(self.board))
@@ -393,7 +395,7 @@ class GtpConnection:
         """ Implement this function for Assignment 2 """
         root = self.board.copy()
         tt = TransTable()
-        hasher = ZobristHash(self.board.size, root)
+
 
     def undoMove(self, args: List[str]) -> None:
         self.board.undoMove()

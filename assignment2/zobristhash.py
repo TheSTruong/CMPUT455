@@ -12,33 +12,17 @@ from board_base import (
 )
 
 class ZobristHash:
-    def __init__(self, boardSize, gameState):
+    def __init__(self, boardSize):
         self.index = boardSize * boardSize
         self.zArray = []
         for _ in range(self.index):
             self.zArray.append([random.getrandbits(64) for _ in range(3)])
-        print(self.index)
-        print(len(self.zArray))
-        print(self.zArray[0])
-        #<---Calculate the initial hash value of the board (ignores borders)--->
-        self.hash = 0 
-        count = 0 
-        for point in gameState.board:
-            if point != BORDER:
-                if count == 0:
-                    self.hash = self.zArray[count][point]
-                else:
-                    self.hash = self.hash ^ self.zArray[count][point]
-                count += 1
-        print(self.hash)
 
     # Computes the hash value of a given board
     def computeHash(self, gameState):
         count = 0 
         hash = 0
         for point in gameState.board:
-            if point == BORDER:
-                print("BORDER")
             if point != BORDER:
                 if count == 0:
                     hash = self.zArray[count][point]
