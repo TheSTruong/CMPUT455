@@ -1,0 +1,77 @@
+boardsize 7
+play b d4
+play w e4
+play b d3
+play w d5
+play b c5
+play w e3
+play b e5
+play w f3
+play b c6
+play w d2
+play b e2
+play w d4
+play b d3
+play w d6
+play b c4
+play w b5
+timelimit 5
+10 solve
+#?[b c3|b e3|b e4]
+
+boardsize 5
+play b c3
+play w d3
+play b c4
+play w c5
+play b c2
+play w b2
+play b b4
+play w d4
+play b d2
+play w e2
+play b d2
+play w d5
+play b e1
+play w a5
+play b c2
+play w a4
+play b c1
+play w b5
+play b e5
+play w a3
+play b b4
+timelimit 5
+20 solve
+#?[draw a1|draw a2|draw b1|draw b3|draw c4|draw d1|draw e3|draw e4]
+
+clear_board
+play b b3
+play w c3
+play b b4
+play w d3
+play b e3
+play w c3
+play b c2
+play w c4
+play b c5
+play w c4
+play b b2
+play w d4
+play b e4
+play w d4
+play b b5
+play w d3
+play b d2
+play w e2
+play b d5
+play w e5
+play b e4
+play w b1
+play b a5
+play w c3
+play b c4
+timelimit 20
+30 genmove w
+#?[d4]
+

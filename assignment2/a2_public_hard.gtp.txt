@@ -1,0 +1,13 @@
+boardsize 7
+clear_board
+10 solve
+#?[unknown]
+
+boardsize 5
+play b c3
+play w d3
+play b b2
+play w d4
+20 solve
+#?[unknown]
+
