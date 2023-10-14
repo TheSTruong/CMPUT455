@@ -376,12 +376,6 @@ class GtpConnection:
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)
         move_as_string = move_as_string.lower()
-        if value < 0:
-            opp = opponent(root.current_player)
-            if opp == BLACK:
-                print('b')
-            if opp == WHITE:
-                print('w')
         self.play_cmd([board_color, move_as_string, 'print_move'])
     
     def timelimit_cmd(self, args: List[str]) -> None:
