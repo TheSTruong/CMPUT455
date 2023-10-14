@@ -15,6 +15,7 @@ from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
 from TranspositionTable import TransTable
 from zobristhash import ZobristHash
+from solver import call_alphabeta
 
 from board_base import (
     BLACK,
@@ -369,22 +370,18 @@ class GtpConnection:
         """
         board_color = args[0].lower()
         color = color_to_int(board_color)
-        result1 = self.board.detect_five_in_a_row()
-        result2 = EMPTY
-        if self.board.get_captures(opponent(color)) >= 10:
-            result2 = opponent(color)
-        if result1 == opponent(color) or result2 == opponent(color):
-            self.respond("resign")
-            return
-        legal_moves = self.board.get_empty_points()
-        if legal_moves.size == 0:
-            self.respond("pass")
-            return
-        rng = np.random.default_rng()
-        choice = rng.choice(len(legal_moves))
-        move = legal_moves[choice]
+        root = self.board.copy()
+        tt = TransTable()
+        value, move = call_alphabeta(root, tt, self.hasher)
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)
+        move_as_string = move_as_string.lower()
+        if value < 0:
+            opp = opponent(root.current_player)
+            if opp == BLACK:
+                print('b')
+            if opp == WHITE:
+                print('w')
         self.play_cmd([board_color, move_as_string, 'print_move'])
     
     def timelimit_cmd(self, args: List[str]) -> None:
@@ -395,7 +392,25 @@ class GtpConnection:
         """ Implement this function for Assignment 2 """
         root = self.board.copy()
         tt = TransTable()
-
+        value, move = call_alphabeta(root, tt, self.hasher)
+        move_coord = point_to_coord(move, self.board.size)
+        move_as_string = format_point(move_coord)
+        move_as_string = move_as_string.lower()
+        if value == 0:
+            # draw
+            self.respond("draw {}".format(move_as_string))
+        if value > 0:
+            # win
+            if root.current_player == BLACK:
+                self.respond('b {}'.format(move_as_string))
+            if root.current_player == WHITE:
+                self.respond('w {}'.format(move_as_string))
+        elif value < 0:
+            opp = opponent(root.current_player)
+            if opp == BLACK:
+                self.respond('b')
+            if opp == WHITE:
+                self.respond('w')
 
     def undoMove(self, args: List[str]) -> None:
         self.board.undoMove()

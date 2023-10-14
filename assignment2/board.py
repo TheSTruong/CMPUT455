@@ -417,4 +417,176 @@ class GoBoard(object):
                 self.black_captures -= scoreCount
             elif self.current_player == WHITE:
                 self.white_captures -= scoreCount
-            
+    
+    def endOfGame(self):
+        if self.get_empty_points().size == 0 or self.detect_five_in_a_row() != EMPTY:
+            return True
+        if self.black_captures >= 10 or self.white_captures >= 10 or self.end_of_game():
+            return True
+        return False
+    
+    def moveOrdering(self, move):
+        score = 0
+        self.play_move(move, self.current_player)
+        score = -self.staticallyEvaluateForToPlay()
+        self.undoMove()
+        return score
+    
+    def staticallyEvaluateForToPlay(self):
+        win_color = self.detect_five_in_a_row()
+        if win_color != EMPTY:
+            return -100000
+        elif self.current_player == "w":
+                if self.black_captures >= 10:
+                    return -100000
+        elif self.current_player == "b":
+                if self.white_captures >= 10:
+                    return -100000
+        assert win_color != self.current_player
+        return self.HeuristicScore()
+    
+    def HeuristicScore(self):
+        score = 0
+        opp = opponent(self.current_player)
+        lines = self.rows + self.cols + self.diags
+        for line in lines:
+            for i in range(len(line) - 5):
+                currentPlayerCount = 0
+                opponentCount = 0
+                # count the number of stones on each five-line
+                for p in line[i:i + 5]:
+                    if self.board[p] == self.current_player:
+                        currentPlayerCount += 1
+                    elif self.board[p] == opp:
+                        opponentCount += 1
+                # Is blocked
+                if currentPlayerCount < 1 or opponentCount < 1:
+                    score += 10 ** currentPlayerCount - 10 ** opponentCount
+                
+                
+        return score
+    
+    def detectImmediateWin(self, point, color):
+        #xxxx.
+        #Horizontal capture
+        score = 0
+        leftIndex = point - 1
+        rightIndex = point + 1
+        opp_color = opponent(color)
+
+        length = 1
+        scoreLeft = 0
+        while (self.board[leftIndex] == color or self.board[leftIndex] == EMPTY) and length < 5:
+            length += 1 
+            if self.board[leftIndex] == color:
+                scoreLeft += 1
+            if self.board[leftIndex] == EMPTY:
+                scoreLeft += 0.5
+            leftIndex -= 1
+        if (self.board[leftIndex] == opp_color):
+            scoreLeft = 0
+        score += scoreLeft
+
+        length = 1
+        scoreRight = 0
+        while (self.board[rightIndex] == color or self.board[rightIndex] == EMPTY) and length < 5:
+            length += 1
+            if self.board[rightIndex] == color:
+                scoreRight += 1
+            if self.board[rightIndex] == EMPTY:
+                scoreRight += 0.5
+            rightIndex += 1
+        if (self.board[rightIndex] == opp_color):
+            scoreRight = 0
+        score += scoreRight
+
+        #Vertical capture
+        downIndex = point - self.NS
+        upIndex = point + self.NS
+
+        length = 1
+        scoreDown = 0
+        while (self.board[downIndex] == color or self.board[downIndex] == EMPTY) and length < 5:
+            length += 1
+            if self.board[downIndex] == color:
+                scoreDown += 1
+            if self.board[downIndex] == EMPTY:
+                scoreDown += 0.5
+            downIndex -= self.NS
+        if (self.board[downIndex] == opp_color):
+            scoreDown = 0
+        score += scoreDown
+
+        length = 1
+        scoreUp = 0
+        while (self.board[upIndex] == color or self.board[upIndex] == EMPTY) and length < 5:
+            length += 1
+            if self.board[upIndex] == color:
+                scoreUp += 1
+            if self.board[upIndex] == EMPTY:
+                scoreUp += 0.5
+            upIndex += self.NS
+        if (self.board[upIndex] == opp_color):
+            scoreUp = 0
+        score += scoreUp
+
+        #Diagonal Captures
+        upLeftIndex = point + self.NS - 1
+        downRightIndex = point - (self.NS - 1)
+        scoreupLeftIndex = 0
+        scoreRightIndex = 0
+
+        length = 1
+        while (self.board[upLeftIndex] == color or self.board[upLeftIndex] == EMPTY) and length < 5:
+            length += 1
+            if self.board[upLeftIndex] == color:
+                scoreupLeftIndex += 1
+            if self.board[upLeftIndex] == EMPTY:
+                scoreupLeftIndex += 0.5
+            upLeftIndex += self.NS - 1
+        if (self.board[upLeftIndex] == opp_color):
+            scoreupLeftIndex = 0
+        score += scoreupLeftIndex
+
+        length = 1
+        while (self.board[downRightIndex] == color or self.board[downRightIndex] == EMPTY) and length < 5:
+            length += 1
+            if self.board[downRightIndex] == color:
+                scoreRightIndex += 1
+            if self.board[downRightIndex] == EMPTY:
+                scoreRightIndex += 0.5
+            downRightIndex -= (self.NS - 1)
+        if (self.board[downRightIndex] == opp_color):
+            scoreRightIndex = 0
+        score += scoreRightIndex
+
+        downLeftIndex = point - (self.NS + 1)
+        upRightIndex = point + self.NS + 1
+        scoreDownLeftIndex = 0
+        scoreUpRightIndex = 0
+
+        length = 1
+        while (self.board[downLeftIndex] == color or self.board[downLeftIndex] == EMPTY) and length < 5:
+            length += 1
+            if self.board[downLeftIndex] == color:
+                scoreDownLeftIndex += 1
+            if self.board[downLeftIndex] == EMPTY:
+                scoreDownLeftIndex += 0.5
+            downLeftIndex -= (self.NS + 1)
+        if (self.board[downLeftIndex] == opp_color):
+            scoreDownLeftIndex = 0
+        score += scoreDownLeftIndex
+
+        length = 1
+        while (self.board[upRightIndex] == color or self.board[upRightIndex] == EMPTY) and length < 5:
+            length += 1
+            if self.board[upRightIndex] == color:
+                scoreUpRightIndex += 1
+            if self.board[upRightIndex] == EMPTY:
+                scoreUpRightIndex += 0.5
+            upRightIndex += self.NS + 1
+        if (self.board[upRightIndex] == opp_color):
+            scoreUpRightIndex = 0
+        score += scoreUpRightIndex
+
+        return score
