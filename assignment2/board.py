@@ -50,6 +50,8 @@ class GoBoard(object):
         assert 2 <= size <= MAXSIZE
         self.reset(size)
         self.calculate_rows_cols_diags()
+        self.prev_black_captures = 0
+        self.prev_white_captures = 0
         self.black_captures = 0
         self.white_captures = 0
         self.boardStack = []
@@ -319,7 +321,9 @@ class GoBoard(object):
         self.last2_move = self.last_move
         self.last_move = point
         O = opponent(color)
-        
+
+        self.prev_black_captures = self.black_captures
+        self.prev_white_captures = self.white_captures
         offsets = [1, -1, self.NS, -self.NS, self.NS+1, -(self.NS+1), self.NS-1, -self.NS+1]
         for offset in offsets:
             if self.board[point+offset] == O and self.board[point+(offset*2)] == O and self.board[point+(offset*3)] == color:
@@ -401,52 +405,145 @@ class GoBoard(object):
             if counter == 5 and prev != EMPTY:
                 return prev
         return EMPTY
-    
-    def detectNumInRow(self) -> List:
-        """
-        Returns a list consisting of the number of five-in-a-rows, four-in-a-rows, etc.
-        """
-        inARows = []
-        for r in self.rows:
-            inARows.append(self.detectNumInList(r))
-    
-    def detectNumInList(self) -> dict:
-        """
-        Returns the number of in-a-rows
-        TODO: special case 4 . 4 then place in middle will have num[9]
-        """
-        playersInARows = [dict(), dict()] # white, black
-        lines = self.rows + self.cols + self.diags
 
-        for line in lines:
-            i = 0
+    def hasFour(self, list, color):
+        if self.board.size < 6:
+            return 0
+        straights = 0
+        blocks = 0
+        for i in range(len(list) - 6):
+            if self.get_color(list[i+1]) == color and self.get_color(list[i+2]) == color \
+            and self.get_color(list[i+3]) == color and self.get_color(list[i+4]) == color:
+                if self.get_color(list[i]) == EMPTY and self.get_color(list[i+5]) == EMPTY:
+                    straights += 1
+                elif self.get_color(list[i]) == EMPTY or self.get_color(list[i+5]) == EMPTY:
+                    blockes += 1
+        return straights, blocks
+    
+    def hasThree(self, list, color):
+        straights = 0
+        blocks = 0
+        for i in range(len(list) - 5):
+            if self.get_color(list[i+1]) == color and self.get_color(list[i+2]) == color and self.get_color(list[i+3]) == color:
+                if self.get_color(list[i]) == EMPTY and self.get_color(list[i+4]) == EMPTY:
+                    straights += 1
+                elif self.get_color(list[i]) == EMPTY or self.get_color(list[i+4]) == EMPTY:
+                    blocks += 1
+        return straights, blocks
+    
+    def hasTwo(self, list, color):
+        straights = 0
+        blocks = 0
+        for i in range(len(list) - 4):
+            if self.get_color(list[i+1]) == color and self.get_color(list[i+2]) == color:
+                if self.get_color(list[i]) == EMPTY and self.get_color(list[i+3]) == EMPTY:
+                    straights += 1
+                elif self.get_color(list[i]) == EMPTY or self.get_color(list[i+3]) == EMPTY:
+                    blocks += 1
+        return straights, blocks
+    
+    def hasOne(self, list, color):
+        straights = 0
+        blocks = 0
+        for i in range(len(list) - 3):
+            if self.get_color(list[i+1]) == color:
+                if self.get_color(list[i]) == EMPTY and self.get_color(list[i+2]) == EMPTY:
+                    straights += 1
+                elif self.get_color(list[i]) == EMPTY or self.get_color(list[i+2]) == EMPTY:
+                    blocks += 1
+        return straights, blocks
+    
+    def detectFours(self):
+        everything = self.rows + self.cols + self.diags
+        players = [dict(), dict()] # black, white
+        
+        for line in everything:
             whiteCount = 0
             blackCount = 0
-            for j in range(i, i+5):
-                if i >= len(line) - 5:
-                    break
-                pt = line[j]
-                if pt == BLACK:
-                    if whiteCount != 0 and line[i-1] == EMPTY:
-                        playersInARows[0][whiteCount] = playersInARows[0][whiteCount].get(whiteCount, 0) + 1
-                        i += whiteCount
-                        continue
+            lastEmpty = -2
+            firstWhite = -2
+            firstBlack = -2
+            for i in range(len(line)):
+                pt = self.get_color(line[i])
+                if pt == EMPTY:
+                    if whiteCount:
+                        if (firstWhite - lastEmpty == 1):
+                            players[1]["straight " + str(whiteCount)] = players[1].get(whiteCount, 0) + 1
+                        else:
+                            players[1]["blocked " + str(whiteCount)] = players[1].get(whiteCount, 0) + 1
+                        whiteCount = 0
+                    elif blackCount:
+                        if (firstBlack - lastEmpty == 1):
+                            players[0]["straight " + str(blackCount)] = players[0].get(blackCount, 0) + 1
+                        else:
+                            players[0]["straight " + str(blackCount)] = players[0].get(blackCount, 0) + 1
+                        blackCount = 0
+                    lastEmpty = i
+                elif pt == BLACK:
+                    if whiteCount and (firstWhite - lastEmpty == 1):
+                        players[1]["blocked " + str(whiteCount)] = players[1].get(whiteCount, 0) + 1
+                        whiteCount = 0
+                    if blackCount == 0:
+                        firstBlack = i
                     blackCount += 1
                 elif pt == WHITE:
-                    if blackCount != 0 and line[i-1] == EMPTY:
-                        playersInARows[1][blackCount] = playersInARows[1][blackCount].get(blackCount, 0) + 1
-                        continue
+                    if blackCount and (firstBlack - lastEmpty == 1):
+                        players[0]["blocked " + str(blackCount)] = players[0].get(blackCount, 0) + 1
+                        blackCount = 0
+                    if whiteCount == 0:
+                        firstWhite = i
                     whiteCount += 1
-                elif pt == EMPTY:
-                    if blackCount != 0:
-                        playersInARows[0][whiteCount] = playersInARows[0][whiteCount].get(whiteCount, 0) + 1
-                        i += whiteCount
-                        continue
-                    elif whiteCount != 0:
-                        playersInARows[1][blackCount] = playersInARows[1][blackCount].get(blackCount, 0) + 1
-                        i += blackCount
-                        continue
-        return playersInARows
+            if whiteCount and (firstWhite - lastEmpty == 1):
+                players[1]["blocked " + str(whiteCount)] = players[1].get(whiteCount, 0) + 1
+            if blackCount and (firstBlack - lastEmpty == 1):
+                players[0]["blocked " + str(blackCount)] = players[0].get(blackCount, 0) + 1
+        # print(players)
+        return players
+
+    
+    # def detectNumInList(self) -> dict:
+    #     """
+    #     Returns the number of in-a-rows
+    #     TODO: special case 4 . 4 then place in middle will have num[9]
+    #     """
+    #     playersInARows = [dict(), dict()] # white, black
+    #     everything = self.rows + self.cols + self.diags
+
+    #     for line in everything:
+    #         i = 0
+    #         whiteCount = 0
+    #         blackCount = 0
+    #         for j in range(i, i+5):
+    #             # if playersInARows[0].get(5, 0) >= 1 or playersInARows[1].get(5, 0) >= 1:
+    #             #     break
+    #             pt = self.get_color(line[j])
+    #             if pt == BLACK:
+    #                 if whiteCount >= 5 or (whiteCount != 0 and line[i-1] == EMPTY):
+    #                     playersInARows[0][whiteCount] = playersInARows[0].get(whiteCount, 0) + 1
+    #                     break
+    #                 whiteCount = 0
+    #                 blackCount += 1
+    #             elif pt == WHITE:
+    #                 if blackCount >= 5 or (blackCount != 0 and line[i-1] == EMPTY):
+    #                     playersInARows[1][blackCount] = playersInARows[1].get(blackCount, 0) + 1
+    #                     break
+    #                 blackCount = 0
+    #                 whiteCount += 1
+    #             elif pt == EMPTY:
+    #                 if blackCount != 0:
+    #                     playersInARows[0][whiteCount] = playersInARows[0].get(whiteCount, 0) + 1
+    #                     whiteCount = 0
+    #                     break
+    #                 elif whiteCount != 0:
+    #                     playersInARows[1][blackCount] = playersInARows[1].get(blackCount, 0) + 1
+    #                     blackCount = 0
+    #                     break
+    #         playersInARows[0][whiteCount] = playersInARows[0].get(whiteCount, 0) + 1
+    #         playersInARows[1][blackCount] = playersInARows[0].get(blackCount, 0) + 1
+    #         if playersInARows[0].get(5, 0) >= 1 or playersInARows[1].get(5, 0) >= 1:
+    #             break
+    #     # print(playersInARows)
+    #     return playersInARows
     
     def undoMove(self):
         if self.boardStack != [] and self.boardStack[-1] == "Marker":
@@ -460,8 +557,10 @@ class GoBoard(object):
             self.current_player = opponent(self.current_player)
         if scoreCount >= 2:
             if self.current_player == BLACK:
+                self.prev_black_captures -= scoreCount
                 self.black_captures -= scoreCount
             elif self.current_player == WHITE:
+                self.prev_black_captures -= scoreCount
                 self.white_captures -= scoreCount
     
     def endOfGame(self):
@@ -482,28 +581,122 @@ class GoBoard(object):
         win_color = self.detect_five_in_a_row()
         if win_color != EMPTY:
             return -100000
-        elif self.current_player == "w":
+        if self.current_player == "w":
                 if self.black_captures >= 10:
                     return -100000
         elif self.current_player == "b":
                 if self.white_captures >= 10:
                     return -100000
-        assert win_color != self.current_player
+        # assert win_color != self.current_player
         return self.HeuristicScore()
     
     def HeuristicScore(self):
         opp = opponent(self.current_player)
-        playersInARow = self.detectNumInList()
-        white = playersInARow[0]
-        black = playersInARow[1]
+        playersInARow = self.detectFours()
+        white = playersInARow[1]
+        black = playersInARow[0]
         
-        score = 10000 * white.get(5, 0) + 50 * white.get(4, 0) + 20 * white.get(3, 0) + 10 * white.get(2, 0) + 5 * white.get(1, 0) \
-                - 10000 * black.get(5, 0) - 50 * black.get(4, 0) - 20 * black.get(3, 0) - 10 * black.get(2, 0) - 5 * black.get(1, 0)
-        if opp == BLACK:
-            return -score
-          
+        score = 1000 * black.get("straight 4", 0) + 700 * black.get("straight 3", 0) + 450 * black.get("blocked 4", 0) + 300 * black.get("blocked 3", 0) + 250 * black.get("straight 2", 0) + 200 * black.get("blocked 2", 0) + 100 * black.get("straight 1", 0) + 25 * black.get("blocked 1", 0) \
+                - 1000 * white.get("straight 4", 0) - 700 * white.get("straight 3", 0) - 450 * white.get("blocked 4", 0) - 300 * white.get("blocked 3", 0) - 250 * white.get("straight 2", 0) - 200 * white.get("blocked 2", 0) - 100 * white.get("straight 1", 0) - 25 * white.get("blocked 1", 0)
+        return score
+
+    # def HeuristicScore(self):
+    #     opp = opponent(self.current_player)
+    #     straight4s = 0
+    #     straight3s = 0
+    #     straight2s = 0
+    #     striaght1s = 0
+    #     blocked4s = 0
+    #     blocked3s = 0
+    #     blocked2s = 0
+    #     blocked1s = 0
+
+    #     for r in self.rows:
+    #         straight4, blocked4 = self.hasFour(r, self.current_player)
+    #         straight3, blocked3 = self.hasThree(r, self.current_player)
+    #         straight2, blocked2 = self.hasTwo(r, self.current_player)
+    #         straight1, blocked1 = self.hasOne(r, self.current_player)
+    #         straight4s += straight4
+    #         straight3s += straight3
+    #         straight2s += straight2
+    #         striaght1s += straight1
+    #         blocked4s += blocked4
+    #         blocked3s += blocked3
+    #         blocked2s += blocked2
+    #         blocked1s += blocked1
+    #     for c in self.cols:
+    #         straight4, blocked4 = self.hasFour(c, self.current_player)
+    #         straight3, blocked3 = self.hasThree(c, self.current_player)
+    #         straight2, blocked2 = self.hasTwo(c, self.current_player)
+    #         straight1, blocked1 = self.hasOne(c, self.current_player)
+    #         straight4s += straight4
+    #         straight3s += straight3
+    #         straight2s += straight2
+    #         striaght1s += straight1
+    #         blocked4s += blocked4
+    #         blocked3s += blocked3
+    #         blocked2s += blocked2
+    #         blocked1s += blocked1
+    #     for d in self.diags:
+    #         straight4, blocked4 = self.hasFour(d, self.current_player)
+    #         straight3, blocked3 = self.hasThree(d, self.current_player)
+    #         straight2, blocked2 = self.hasTwo(d, self.current_player)
+    #         straight1, blocked1 = self.hasOne(d, self.current_player)
+    #         straight4s += straight4
+    #         straight3s += straight3
+    #         straight2s += straight2
+    #         striaght1s += straight1
+    #         blocked4s += blocked4
+    #         blocked3s += blocked3
+    #         blocked2s += blocked2
+    #         blocked1s += blocked1
+
+    #     for r in self.rows:
+    #         straight4, blocked4 = self.hasFour(r, opp)
+    #         straight3, blocked3 = self.hasThree(r, opp)
+    #         straight2, blocked2 = self.hasTwo(r, opp)
+    #         straight1, blocked1 = self.hasOne(r, opp)
+    #         straight4s -= straight4
+    #         straight3s -= straight3
+    #         straight2s -= straight2
+    #         striaght1s -= straight1
+    #         blocked4s -= blocked4
+    #         blocked3s -= blocked3
+    #         blocked2s -= blocked2
+    #         blocked1s -= blocked1
+    #     for c in self.cols:
+    #         straight4, blocked4 = self.hasFour(c, opp)
+    #         straight3, blocked3 = self.hasThree(c, opp)
+    #         straight2, blocked2 = self.hasTwo(c, opp)
+    #         straight1, blocked1 = self.hasOne(c, opp)
+    #         straight4s -= straight4
+    #         straight3s -= straight3
+    #         straight2s -= straight2
+    #         striaght1s -= straight1
+    #         blocked4s -= blocked4
+    #         blocked3s -= blocked3
+    #         blocked2s -= blocked2
+    #         blocked1s -= blocked1
+    #     for d in self.diags:
+    #         straight4, blocked4 = self.hasFour(d, opp)
+    #         straight3, blocked3 = self.hasThree(d, opp)
+    #         straight2, blocked2 = self.hasTwo(d, opp)
+    #         straight1, blocked1 = self.hasOne(d, opp)
+    #         straight4s -= straight4
+    #         straight3s -= straight3
+    #         straight2s -= straight2
+    #         striaght1s -= straight1
+    #         blocked4s -= blocked4
+    #         blocked3s -= blocked3
+    #         blocked2s -= blocked2
+    #         blocked1s -= blocked1
+
+    #     return 1000 * straight4s + 750 * straight3s + 600 * blocked4s + 450 * blocked3s + 300 * straight2s + 225 * blocked2s + 100 * striaght1s + 20 * blocked1s
+        # opp = opponent(self.current_player)
+        # score = 0
         # lines = self.rows + self.cols + self.diags
         # for line in lines:
+        #     print(len(line) - 5)
         #     for i in range(len(line) - 5):
         #         currentPlayerCount = 0
         #         opponentCount = 0
@@ -516,6 +709,7 @@ class GoBoard(object):
         #         # Is blocked
         #         if currentPlayerCount < 1 or opponentCount < 1:
         #             score += 10 ** currentPlayerCount - 10 ** opponentCount
+        # return score
     
     def detectImmediateWin(self, point, color):
         #xxxx.
@@ -641,3 +835,67 @@ class GoBoard(object):
         score += scoreUpRightIndex
 
         return score
+    
+    def checkInRange(self, point):
+        range = 2
+        # Top left to bottom right
+        it = 1
+        in_a_row = 0
+        while self.get_color(point - self.NS * it + it) == EMPTY and it <= range:
+            in_a_row += 1
+            it += 1
+        
+
+        it = 1
+        while self.get_color(point + self.NS * it - it) == EMPTY and it <= range:
+            in_a_row += 1
+            it += 1
+        
+        
+        # Left to right
+        it = 1
+        while self.get_color(point - it) == EMPTY and it <= range:
+            in_a_row += 1
+            it += 1
+        
+        
+        it = 1 
+        while self.get_color(point + it) == EMPTY and it <= range:
+            in_a_row += 1
+            it += 1
+        
+
+        # Top to bottom
+        it = 1
+        while self.get_color(point - self.NS * it) == EMPTY and it <= range:
+            in_a_row += 1
+            it += 1
+
+        
+        it = 1
+        while self.get_color(point + self.NS * it) == EMPTY and it <= range:
+            in_a_row += 1
+            it += 1
+
+
+        # Bottom left to top right
+        it = 1
+        while self.get_color(point - self.NS * it - it) == EMPTY and it <= range:
+            in_a_row += 1
+            it += 1
+        
+        it = 1
+        while self.get_color(point + self.NS * it + it) == EMPTY and it <= range:
+            in_a_row += 1
+            it += 1
+        
+        if in_a_row >= range * 8:
+            return False
+        return True
+
+    def removeUseless(self, list):
+        newList = []
+        for move in list:
+            if self.checkInRange(move):
+                newList.append(move)
+        return newList

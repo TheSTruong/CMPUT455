@@ -22,6 +22,7 @@ def alphabeta(state: GoBoard, alpha, beta, tt: TransTable, hasher: ZobristHash):
 
     legalMoves = state.get_empty_points()
     sortedLegal = sorted(legalMoves, key=state.moveOrdering, reverse=True)
+    sortedLegal = state.removeUseless(sortedLegal)
     bestMove = sortedLegal[0]
 
     for move in sortedLegal:
