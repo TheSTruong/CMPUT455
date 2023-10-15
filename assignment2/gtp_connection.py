@@ -57,7 +57,7 @@ class GtpConnection:
 
         # set signalrm
         self.timelimit = 1
-        signal(signal.SIGALRM, timeout_handler)
+        signal.signal(signal.SIGALRM, timeout_handler)
 
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
@@ -404,7 +404,7 @@ class GtpConnection:
             # generate random move if reached timelimit
             is_random = True
         else:
-            self.alarm(0)    # disable timelimit alarm
+            signal.alarm(0)    # disable timelimit alarm
         # generate random move if toPlay is losing
         if value < 0:
             is_random = True
