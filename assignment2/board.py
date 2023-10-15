@@ -402,6 +402,52 @@ class GoBoard(object):
                 return prev
         return EMPTY
     
+    def detectNumInRow(self) -> List:
+        """
+        Returns a list consisting of the number of five-in-a-rows, four-in-a-rows, etc.
+        """
+        inARows = []
+        for r in self.rows:
+            inARows.append(self.detectNumInList(r))
+    
+    def detectNumInList(self) -> dict:
+        """
+        Returns the number of in-a-rows
+        TODO: special case 4 . 4 then place in middle will have num[9]
+        """
+        playersInARows = [dict(), dict()] # white, black
+        lines = self.rows + self.cols + self.diags
+
+        for line in lines:
+            i = 0
+            whiteCount = 0
+            blackCount = 0
+            for j in range(i, i+5):
+                if i >= len(line) - 5:
+                    break
+                pt = line[j]
+                if pt == BLACK:
+                    if whiteCount != 0 and line[i-1] == EMPTY:
+                        playersInARows[0][whiteCount] = playersInARows[0][whiteCount].get(whiteCount, 0) + 1
+                        i += whiteCount
+                        continue
+                    blackCount += 1
+                elif pt == WHITE:
+                    if blackCount != 0 and line[i-1] == EMPTY:
+                        playersInARows[1][blackCount] = playersInARows[1][blackCount].get(blackCount, 0) + 1
+                        continue
+                    whiteCount += 1
+                elif pt == EMPTY:
+                    if blackCount != 0:
+                        playersInARows[0][whiteCount] = playersInARows[0][whiteCount].get(whiteCount, 0) + 1
+                        i += whiteCount
+                        continue
+                    elif whiteCount != 0:
+                        playersInARows[1][blackCount] = playersInARows[1][blackCount].get(blackCount, 0) + 1
+                        i += blackCount
+                        continue
+        return playersInARows
+    
     def undoMove(self):
         if self.boardStack != [] and self.boardStack[-1] == "Marker":
             self.boardStack.pop()
@@ -446,23 +492,30 @@ class GoBoard(object):
         return self.HeuristicScore()
     
     def HeuristicScore(self):
-        score = 0
         opp = opponent(self.current_player)
-        lines = self.rows + self.cols + self.diags
-        for line in lines:
-            for i in range(len(line) - 5):
-                currentPlayerCount = 0
-                opponentCount = 0
-                # count the number of stones on each five-line
-                for p in line[i:i + 5]:
-                    if self.board[p] == self.current_player:
-                        currentPlayerCount += 1
-                    elif self.board[p] == opp:
-                        opponentCount += 1
-                # Is blocked
-                if currentPlayerCount < 1 or opponentCount < 1:
-                    score += 10 ** currentPlayerCount - 10 ** opponentCount
-        return score
+        playersInARow = self.detectNumInList()
+        white = playersInARow[0]
+        black = playersInARow[1]
+        
+        score = 10000 * white.get(5, 0) + 50 * white.get(4, 0) + 20 * white.get(3, 0) + 10 * white.get(2, 0) + 5 * white.get(1, 0) \
+                - 10000 * black.get(5, 0) - 50 * black.get(4, 0) - 20 * black.get(3, 0) - 10 * black.get(2, 0) - 5 * black.get(1, 0)
+        if opp == BLACK:
+            return -score
+          
+        # lines = self.rows + self.cols + self.diags
+        # for line in lines:
+        #     for i in range(len(line) - 5):
+        #         currentPlayerCount = 0
+        #         opponentCount = 0
+        #         # count the number of stones on each five-line
+        #         for p in line[i:i + 5]:
+        #             if self.board[p] == self.current_player:
+        #                 currentPlayerCount += 1
+        #             elif self.board[p] == opp:
+        #                 opponentCount += 1
+        #         # Is blocked
+        #         if currentPlayerCount < 1 or opponentCount < 1:
+        #             score += 10 ** currentPlayerCount - 10 ** opponentCount
     
     def detectImmediateWin(self, point, color):
         #xxxx.
