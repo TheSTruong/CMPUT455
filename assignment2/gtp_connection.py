@@ -13,9 +13,15 @@ import numpy as np
 import re
 from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
+
+# solver
 from TranspositionTable import TransTable
 from zobristhash import ZobristHash
 from solver import call_alphabeta
+
+# timelimit
+from sig_handler import timeout_handler
+import signal
 
 from board_base import (
     BLACK,
@@ -48,6 +54,10 @@ class GtpConnection:
         self.go_engine = go_engine
         self.board: GoBoard = board
         self.hasher = ZobristHash(self.board.size)
+
+        # set signalrm
+        self.timelimit = 1
+        signal(signal.SIGALRM, timeout_handler)
 
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
@@ -290,7 +300,6 @@ class GtpConnection:
             str += '\n'
         self.respond(str)
 
-
     def gogui_rules_final_result_cmd(self, args: List[str]) -> None:
         """ We already implemented this function for Assignment 2 """
         result1 = self.board.detect_five_in_a_row()
@@ -370,48 +379,87 @@ class GtpConnection:
         """
         board_color = args[0].lower()
         color = color_to_int(board_color)
-        root = self.board.copy()
-        tt = TransTable()
-        value, move = call_alphabeta(root, tt, self.hasher)
+        is_random = False    # flag to generate random move
+
+        # resign or pass
+        result1 = self.board.detect_five_in_a_row()
+        result2 = EMPTY
+        if self.board.get_captures(opponent(color)) >= 10:
+            result2 = opponent(color)
+        if result1 == opponent(color) or result2 == opponent(color):
+            self.respond("resign")
+            return
+        legal_moves = self.board.get_empty_points()
+        if legal_moves.size == 0:
+            self.respond("pass")
+            return
+
+        # gen move with solver
+        try: 
+            root = self.board.copy()
+            tt = TransTable()
+            signal.alarm(self.timelimit)    # set timelimit alarm
+            value, move = call_alphabeta(root, tt, self.hasher)
+        except TimeoutError:
+            # generate random move if reached timelimit
+            is_random = True
+        else:
+            self.alarm(0)    # disable timelimit alarm
+        # generate random move if toPlay is losing
+        if value < 0:
+            is_random = True
+        
+        # generate random move if toPlay is losing or timelimit exceeded
+        if is_random:
+            rng = np.random.default_rng()
+            choice = rng.choice(len(legal_moves))
+            move = legal_moves[choice]
+
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)
         move_as_string = move_as_string.lower()
-        if value < 0:
-            #Generate random move below here
-            opp = opponent(root.current_player)
-            if opp == BLACK:
-                print('b')
-            if opp == WHITE:
-                print('w')
         self.play_cmd([board_color, move_as_string, 'print_move'])
     
     def timelimit_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
-        pass
+        try:
+            assert isinstance(args[0], int)
+            assert 1 <= args[0] <= 100 
+            self.timelimit = int(args[0])
+        except AssertionError:
+            self.timelimit = 1
+
+        self.respond()
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
         root = self.board.copy()
         tt = TransTable()
-        value, move = call_alphabeta(root, tt, self.hasher)
-        move_coord = point_to_coord(move, self.board.size)
-        move_as_string = format_point(move_coord)
-        move_as_string = move_as_string.lower()
-        if value == 0:
-            # draw
-            self.respond("draw {}".format(move_as_string))
-        if value > 0:
-            # win
-            if root.current_player == BLACK:
-                self.respond('b {}'.format(move_as_string))
-            if root.current_player == WHITE:
-                self.respond('w {}'.format(move_as_string))
-        elif value < 0:
-            opp = opponent(root.current_player)
-            if opp == BLACK:
-                self.respond('b')
-            if opp == WHITE:
-                self.respond('w')
+        try: 
+            signal.alarm(self.timelimit)    # set timelimit alarm
+            value, move = call_alphabeta(root, tt, self.hasher)
+            move_coord = point_to_coord(move, self.board.size)
+            move_as_string = format_point(move_coord)
+            move_as_string = move_as_string.lower()
+            if value == 0:
+                # draw
+                self.respond("draw {}".format(move_as_string))
+            if value > 0:
+                # win
+                if root.current_player == BLACK:
+                    self.respond("b {}".format(move_as_string))
+                if root.current_player == WHITE:
+                    self.respond("w {}".format(move_as_string))
+            elif value < 0:
+                opp = opponent(root.current_player)
+                if opp == BLACK:
+                    self.respond('b')
+                if opp == WHITE:
+                    self.respond('w')
+        except TimeoutError:
+            self.respond("unknown")
+        else:
+            signal.alarm(0)    # disable timelimit alarm
 
     def undoMove(self, args: List[str]) -> None:
         self.board.undoMove()
