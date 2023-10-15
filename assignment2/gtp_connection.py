@@ -57,7 +57,7 @@ class GtpConnection:
 
         # set signalrm
         self.timelimit = 1
-        signal(signal.SIGALRM, timeout_handler)
+        signal.signal(signal.SIGALRM, timeout_handler)
 
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
@@ -396,6 +396,7 @@ class GtpConnection:
 
         # gen move with solver
         try: 
+            value = -1
             root = self.board.copy()
             tt = TransTable()
             signal.alarm(self.timelimit)    # set timelimit alarm
@@ -423,8 +424,8 @@ class GtpConnection:
     def timelimit_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
         try:
-            assert isinstance(args[0], int)
-            assert 1 <= args[0] <= 100 
+            assert isinstance(int(args[0]), int)
+            assert 1 <= int(args[0]) <= 100 
             self.timelimit = int(args[0])
         except AssertionError:
             self.timelimit = 1
