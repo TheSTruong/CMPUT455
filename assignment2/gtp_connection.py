@@ -396,6 +396,7 @@ class GtpConnection:
 
         # gen move with solver
         try: 
+            value = -1
             root = self.board.copy()
             tt = TransTable()
             signal.alarm(self.timelimit)    # set timelimit alarm

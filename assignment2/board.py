@@ -501,7 +501,7 @@ class GoBoard(object):
                 - 10000 * black.get(5, 0) - 50 * black.get(4, 0) - 20 * black.get(3, 0) - 10 * black.get(2, 0) - 5 * black.get(1, 0)
         if opp == BLACK:
             return -score
-          
+        return score
         # lines = self.rows + self.cols + self.diags
         # for line in lines:
         #     for i in range(len(line) - 5):
