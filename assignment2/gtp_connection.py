@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Tuple
 # solver
 from TranspositionTable import TransTable
 from zobristhash import ZobristHash
-from solver import call_alphabeta
+from solver import call_alphabetaDL
 
 # timelimit
 from sig_handler import timeout_handler
@@ -400,7 +400,7 @@ class GtpConnection:
             root = self.board.copy()
             tt = TransTable()
             signal.alarm(self.timelimit)    # set timelimit alarm
-            value, move = call_alphabeta(root, tt, self.hasher)
+            value, move = call_alphabetaDL(root, tt, self.hasher, 10)
         except TimeoutError:
             # generate random move if reached timelimit
             is_random = True
@@ -438,7 +438,7 @@ class GtpConnection:
         tt = TransTable()
         try: 
             signal.alarm(self.timelimit)    # set timelimit alarm
-            value, move = call_alphabeta(root, tt, self.hasher)
+            value, move = call_alphabetaDL(root, tt, self.hasher, 10)
             move_coord = point_to_coord(move, self.board.size)
             move_as_string = format_point(move_coord)
             move_as_string = move_as_string.lower()

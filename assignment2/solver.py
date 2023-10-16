@@ -9,13 +9,13 @@ def storeResult(tt, code, result):
     return result
 
 
-def alphabeta(state: GoBoard, alpha, beta, tt: TransTable, hasher: ZobristHash):
+def alphabetaDL(state: GoBoard, alpha, beta, tt: TransTable, hasher: ZobristHash, depth):
     code = hasher.computeHash(state)
     result = tt.lookup(code)
     if result != None:
         return result
 
-    if state.endOfGame():
+    if state.endOfGame() or depth == 0:
         result = (state.staticallyEvaluateForToPlay(), None)
         storeResult(tt, code, result)
         return result
@@ -26,7 +26,7 @@ def alphabeta(state: GoBoard, alpha, beta, tt: TransTable, hasher: ZobristHash):
 
     for move in sortedLegal:
         state.play_move(move, state.current_player)
-        value, mv = alphabeta(state, -beta, -alpha, tt, hasher)
+        value, mv = alphabetaDL(state, -beta, -alpha, tt, hasher, depth - 1)
         value = -value
         if value > alpha:
             alpha = value
@@ -42,5 +42,5 @@ def alphabeta(state: GoBoard, alpha, beta, tt: TransTable, hasher: ZobristHash):
     return result
 
 
-def call_alphabeta(rootState, tt, hasher):
-    return alphabeta(rootState, -INFINITY, INFINITY, tt, hasher)
+def call_alphabetaDL(rootState, tt, hasher, depth):
+    return alphabetaDL(rootState, -INFINITY, INFINITY, tt, hasher, depth)
