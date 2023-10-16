@@ -424,8 +424,8 @@ class GtpConnection:
     def timelimit_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
         try:
-            assert isinstance(args[0], int)
-            assert 1 <= args[0] <= 100 
+            assert isinstance(int(args[0]), int)
+            assert 1 <= int(args[0]) <= 100 
             self.timelimit = int(args[0])
         except AssertionError:
             self.timelimit = 1
