@@ -60,7 +60,7 @@ class GtpConnection:
         signal.signal(signal.SIGALRM, timeout_handler)
 
         # set alpha beta iterating deepening depth
-        self.alphabeta_depth = self.timelimit * 8
+        self.alphabeta_depth = self.timelimit * 6
 
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
@@ -432,7 +432,7 @@ class GtpConnection:
             assert isinstance(int(args[0]), int)
             assert 1 <= int(args[0]) <= 100 
             self.timelimit = int(args[0])
-            self.alphabeta_depth = self.timelimit * 8
+            self.alphabeta_depth = self.timelimit * 6
         except AssertionError:
             self.timelimit = 1
 
