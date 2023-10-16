@@ -402,52 +402,6 @@ class GoBoard(object):
                 return prev
         return EMPTY
     
-    def detectNumInRow(self) -> List:
-        """
-        Returns a list consisting of the number of five-in-a-rows, four-in-a-rows, etc.
-        """
-        inARows = []
-        for r in self.rows:
-            inARows.append(self.detectNumInList(r))
-    
-    def detectNumInList(self) -> dict:
-        """
-        Returns the number of in-a-rows
-        TODO: special case 4 . 4 then place in middle will have num[9]
-        """
-        playersInARows = [dict(), dict()] # white, black
-        lines = self.rows + self.cols + self.diags
-
-        for line in lines:
-            i = 0
-            whiteCount = 0
-            blackCount = 0
-            for j in range(i, i+5):
-                if i >= len(line) - 5:
-                    break
-                pt = line[j]
-                if pt == BLACK:
-                    if whiteCount != 0 and line[i-1] == EMPTY:
-                        playersInARows[0][whiteCount] = playersInARows[0][whiteCount].get(whiteCount, 0) + 1
-                        i += whiteCount
-                        continue
-                    blackCount += 1
-                elif pt == WHITE:
-                    if blackCount != 0 and line[i-1] == EMPTY:
-                        playersInARows[1][blackCount] = playersInARows[1][blackCount].get(blackCount, 0) + 1
-                        continue
-                    whiteCount += 1
-                elif pt == EMPTY:
-                    if blackCount != 0:
-                        playersInARows[0][whiteCount] = playersInARows[0][whiteCount].get(whiteCount, 0) + 1
-                        i += whiteCount
-                        continue
-                    elif whiteCount != 0:
-                        playersInARows[1][blackCount] = playersInARows[1][blackCount].get(blackCount, 0) + 1
-                        i += blackCount
-                        continue
-        return playersInARows
-    
     def undoMove(self):
         if self.boardStack != [] and self.boardStack[-1] == "Marker":
             self.boardStack.pop()
@@ -502,142 +456,49 @@ class GoBoard(object):
         if opp == BLACK:
             return -score
         return score
-        # lines = self.rows + self.cols + self.diags
-        # for line in lines:
-        #     for i in range(len(line) - 5):
-        #         currentPlayerCount = 0
-        #         opponentCount = 0
-        #         # count the number of stones on each five-line
-        #         for p in line[i:i + 5]:
-        #             if self.board[p] == self.current_player:
-        #                 currentPlayerCount += 1
-        #             elif self.board[p] == opp:
-        #                 opponentCount += 1
-        #         # Is blocked
-        #         if currentPlayerCount < 1 or opponentCount < 1:
-        #             score += 10 ** currentPlayerCount - 10 ** opponentCount
     
-    def detectImmediateWin(self, point, color):
-        #xxxx.
-        #Horizontal capture
-        score = 0
-        leftIndex = point - 1
-        rightIndex = point + 1
-        opp_color = opponent(color)
+    def detectNumInRow(self) -> List:
+        """
+        Returns a list consisting of the number of five-in-a-rows, four-in-a-rows, etc.
+        """
+        inARows = []
+        for r in self.rows:
+            inARows.append(self.detectNumInList(r))
+    
+    def detectNumInList(self) -> dict:
+        """
+        Returns the number of in-a-rows
+        TODO: special case 4 . 4 then place in middle will have num[9]
+        """
+        playersInARows = [dict(), dict()] # white, black
+        lines = self.rows + self.cols + self.diags
 
-        length = 1
-        scoreLeft = 0
-        while (self.board[leftIndex] == color or self.board[leftIndex] == EMPTY) and length < 5:
-            length += 1 
-            if self.board[leftIndex] == color:
-                scoreLeft += 1
-            if self.board[leftIndex] == EMPTY:
-                scoreLeft += 0.5
-            leftIndex -= 1
-        if (self.board[leftIndex] == opp_color):
-            scoreLeft = 0
-        score += scoreLeft
-
-        length = 1
-        scoreRight = 0
-        while (self.board[rightIndex] == color or self.board[rightIndex] == EMPTY) and length < 5:
-            length += 1
-            if self.board[rightIndex] == color:
-                scoreRight += 1
-            if self.board[rightIndex] == EMPTY:
-                scoreRight += 0.5
-            rightIndex += 1
-        if (self.board[rightIndex] == opp_color):
-            scoreRight = 0
-        score += scoreRight
-
-        #Vertical capture
-        downIndex = point - self.NS
-        upIndex = point + self.NS
-
-        length = 1
-        scoreDown = 0
-        while (self.board[downIndex] == color or self.board[downIndex] == EMPTY) and length < 5:
-            length += 1
-            if self.board[downIndex] == color:
-                scoreDown += 1
-            if self.board[downIndex] == EMPTY:
-                scoreDown += 0.5
-            downIndex -= self.NS
-        if (self.board[downIndex] == opp_color):
-            scoreDown = 0
-        score += scoreDown
-
-        length = 1
-        scoreUp = 0
-        while (self.board[upIndex] == color or self.board[upIndex] == EMPTY) and length < 5:
-            length += 1
-            if self.board[upIndex] == color:
-                scoreUp += 1
-            if self.board[upIndex] == EMPTY:
-                scoreUp += 0.5
-            upIndex += self.NS
-        if (self.board[upIndex] == opp_color):
-            scoreUp = 0
-        score += scoreUp
-
-        #Diagonal Captures
-        upLeftIndex = point + self.NS - 1
-        downRightIndex = point - (self.NS - 1)
-        scoreupLeftIndex = 0
-        scoreRightIndex = 0
-
-        length = 1
-        while (self.board[upLeftIndex] == color or self.board[upLeftIndex] == EMPTY) and length < 5:
-            length += 1
-            if self.board[upLeftIndex] == color:
-                scoreupLeftIndex += 1
-            if self.board[upLeftIndex] == EMPTY:
-                scoreupLeftIndex += 0.5
-            upLeftIndex += self.NS - 1
-        if (self.board[upLeftIndex] == opp_color):
-            scoreupLeftIndex = 0
-        score += scoreupLeftIndex
-
-        length = 1
-        while (self.board[downRightIndex] == color or self.board[downRightIndex] == EMPTY) and length < 5:
-            length += 1
-            if self.board[downRightIndex] == color:
-                scoreRightIndex += 1
-            if self.board[downRightIndex] == EMPTY:
-                scoreRightIndex += 0.5
-            downRightIndex -= (self.NS - 1)
-        if (self.board[downRightIndex] == opp_color):
-            scoreRightIndex = 0
-        score += scoreRightIndex
-
-        downLeftIndex = point - (self.NS + 1)
-        upRightIndex = point + self.NS + 1
-        scoreDownLeftIndex = 0
-        scoreUpRightIndex = 0
-
-        length = 1
-        while (self.board[downLeftIndex] == color or self.board[downLeftIndex] == EMPTY) and length < 5:
-            length += 1
-            if self.board[downLeftIndex] == color:
-                scoreDownLeftIndex += 1
-            if self.board[downLeftIndex] == EMPTY:
-                scoreDownLeftIndex += 0.5
-            downLeftIndex -= (self.NS + 1)
-        if (self.board[downLeftIndex] == opp_color):
-            scoreDownLeftIndex = 0
-        score += scoreDownLeftIndex
-
-        length = 1
-        while (self.board[upRightIndex] == color or self.board[upRightIndex] == EMPTY) and length < 5:
-            length += 1
-            if self.board[upRightIndex] == color:
-                scoreUpRightIndex += 1
-            if self.board[upRightIndex] == EMPTY:
-                scoreUpRightIndex += 0.5
-            upRightIndex += self.NS + 1
-        if (self.board[upRightIndex] == opp_color):
-            scoreUpRightIndex = 0
-        score += scoreUpRightIndex
-
-        return score
+        for line in lines:
+            i = 0
+            whiteCount = 0
+            blackCount = 0
+            for j in range(i, i+5):
+                if i >= len(line) - 5:
+                    break
+                pt = line[j]
+                if pt == BLACK:
+                    if whiteCount != 0 and line[i-1] == EMPTY:
+                        playersInARows[0][whiteCount] = playersInARows[0][whiteCount].get(whiteCount, 0) + 1
+                        i += whiteCount
+                        continue
+                    blackCount += 1
+                elif pt == WHITE:
+                    if blackCount != 0 and line[i-1] == EMPTY:
+                        playersInARows[1][blackCount] = playersInARows[1][blackCount].get(blackCount, 0) + 1
+                        continue
+                    whiteCount += 1
+                elif pt == EMPTY:
+                    if blackCount != 0:
+                        playersInARows[0][whiteCount] = playersInARows[0][whiteCount].get(whiteCount, 0) + 1
+                        i += whiteCount
+                        continue
+                    elif whiteCount != 0:
+                        playersInARows[1][blackCount] = playersInARows[1][blackCount].get(blackCount, 0) + 1
+                        i += blackCount
+                        continue
+        return playersInARows
