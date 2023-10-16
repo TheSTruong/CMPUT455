@@ -15,8 +15,8 @@ from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
 
 # solver
-from TranspositionTable import TransTable
-from zobristhash import ZobristHash
+from transposition_table import TranspositionTable
+from zobrist_hash import ZobristHash
 from solver import call_alphabetaDL
 
 # timelimit
@@ -58,6 +58,9 @@ class GtpConnection:
         # set signalrm
         self.timelimit = 1
         signal.signal(signal.SIGALRM, timeout_handler)
+
+        # set alpha beta iterating deepening depth
+        self.alphabeta_depth = self.timelimit * 8
 
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
@@ -394,18 +397,20 @@ class GtpConnection:
             self.respond("pass")
             return
 
+        value = -1
+        root = self.board.copy()
+        tt = TranspositionTable()
+
         # gen move with solver
         try: 
-            value = -1
-            root = self.board.copy()
-            tt = TransTable()
             signal.alarm(self.timelimit)    # set timelimit alarm
-            value, move = call_alphabetaDL(root, tt, self.hasher, 10)
+            value, move = call_alphabetaDL(root, self.alphabeta_depth, tt, self.hasher)
         except TimeoutError:
             # generate random move if reached timelimit
             is_random = True
         else:
             signal.alarm(0)    # disable timelimit alarm
+
         # generate random move if toPlay is losing
         if value < 0:
             is_random = True
@@ -427,6 +432,7 @@ class GtpConnection:
             assert isinstance(int(args[0]), int)
             assert 1 <= int(args[0]) <= 100 
             self.timelimit = int(args[0])
+            self.alphabeta_depth = self.timelimit * 8
         except AssertionError:
             self.timelimit = 1
 
@@ -435,10 +441,15 @@ class GtpConnection:
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
         root = self.board.copy()
-        tt = TransTable()
+        tt = TranspositionTable()
+        
         try: 
             signal.alarm(self.timelimit)    # set timelimit alarm
-            value, move = call_alphabetaDL(root, tt, self.hasher, 10)
+            value, move = call_alphabetaDL(root, self.alphabeta_depth, tt, self.hasher)
+        except TimeoutError:
+            self.respond("unknown")
+        else:
+            signal.alarm(0)    # disable timelimit alarm
             move_coord = point_to_coord(move, self.board.size)
             move_as_string = format_point(move_coord)
             move_as_string = move_as_string.lower()
@@ -457,10 +468,6 @@ class GtpConnection:
                     self.respond('b')
                 if opp == WHITE:
                     self.respond('w')
-        except TimeoutError:
-            self.respond("unknown")
-        else:
-            signal.alarm(0)    # disable timelimit alarm
 
     def undoMove(self, args: List[str]) -> None:
         self.board.undoMove()

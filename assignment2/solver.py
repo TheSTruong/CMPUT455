@@ -1,15 +1,13 @@
 from board import GoBoard
-from board_util import GoBoardUtil
-from TranspositionTable import TransTable
-from zobristhash import ZobristHash
+from transposition_table import TranspositionTable
+from zobrist_hash import ZobristHash
 INFINITY = 1000000
 
 def storeResult(tt, code, result):
     tt.store(code, result)
     return result
 
-
-def alphabetaDL(state: GoBoard, alpha, beta, tt: TransTable, hasher: ZobristHash, depth):
+def alphabetaDL(state, alpha, beta, depth, tt, hasher):
     code = hasher.computeHash(state)
     result = tt.lookup(code)
     if result != None:
@@ -17,8 +15,7 @@ def alphabetaDL(state: GoBoard, alpha, beta, tt: TransTable, hasher: ZobristHash
 
     if state.endOfGame() or depth == 0:
         result = (state.staticallyEvaluateForToPlay(), None)
-        storeResult(tt, code, result)
-        return result
+        return storeResult(tt, code, result)
 
     legalMoves = state.get_empty_points()
     sortedLegal = sorted(legalMoves, key=state.moveOrdering, reverse=True)
@@ -26,7 +23,7 @@ def alphabetaDL(state: GoBoard, alpha, beta, tt: TransTable, hasher: ZobristHash
 
     for move in sortedLegal:
         state.play_move(move, state.current_player)
-        value, mv = alphabetaDL(state, -beta, -alpha, tt, hasher, depth - 1)
+        value, mv = alphabetaDL(state, -beta, -alpha, depth - 1, tt, hasher)
         value = -value
         if value > alpha:
             alpha = value
@@ -34,13 +31,10 @@ def alphabetaDL(state: GoBoard, alpha, beta, tt: TransTable, hasher: ZobristHash
         state.undoMove()
         if value >= beta:
             result = (beta, bestMove)
-            storeResult(tt, code, result)
-            return result
+            return storeResult(tt, code, result)
 
     result = (alpha, bestMove)
-    storeResult(tt, code, result)
-    return result
+    return storeResult(tt, code, result)
 
-
-def call_alphabetaDL(rootState, tt, hasher, depth):
-    return alphabetaDL(rootState, -INFINITY, INFINITY, tt, hasher, depth)
+def call_alphabetaDL(rootState, depth, tt, hasher):
+    return alphabetaDL(rootState, -INFINITY, INFINITY, depth, tt, hasher)

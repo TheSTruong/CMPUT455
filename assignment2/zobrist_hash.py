@@ -1,21 +1,13 @@
 import random
 from board_base import (
-    BLACK,
-    WHITE,
-    EMPTY,
-    BORDER,
-    GO_COLOR, GO_POINT,
-    PASS,
-    MAXSIZE,
-    coord_to_point,
-    opponent
+    BORDER
 )
 
 class ZobristHash:
     def __init__(self, boardSize):
-        self.index = boardSize * boardSize
+        self.boardSize = boardSize * boardSize
         self.zArray = []
-        for _ in range(self.index):
+        for _ in range(self.boardSize):
             self.zArray.append([random.getrandbits(64) for _ in range(3)])
 
     # Computes the hash value of a given board
@@ -30,7 +22,3 @@ class ZobristHash:
                     hash = hash ^ self.zArray[count][point]
                 count += 1
         return hash
-
-            
-
-    

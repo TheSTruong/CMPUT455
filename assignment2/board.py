@@ -59,6 +59,7 @@ class GoBoard(object):
             self.black_captures += 2
         elif color == WHITE:
             self.white_captures += 2
+    
     def get_captures(self, color: GO_COLOR) -> None:
         if color == BLACK:
             return self.black_captures
@@ -434,25 +435,27 @@ class GoBoard(object):
     
     def staticallyEvaluateForToPlay(self):
         win_color = self.detect_five_in_a_row()
+        assert win_color != self.current_player
+
         if win_color != EMPTY:
             return -100000
-        elif self.current_player == "w":
-                if self.black_captures >= 10:
-                    return -100000
-        elif self.current_player == "b":
-                if self.white_captures >= 10:
-                    return -100000
-        assert win_color != self.current_player
-        return self.HeuristicScore()
+        elif self.current_player == WHITE:
+            if self.black_captures >= 10:
+                return -100000
+        elif self.current_player == BLACK:
+            if self.white_captures >= 10:
+                return -100000
+        return self.heuristicScore()
     
-    def HeuristicScore(self):
+    def heuristicScore(self):
         opp = opponent(self.current_player)
         playersInARow = self.detectNumInList()
         white = playersInARow[0]
         black = playersInARow[1]
         
         score = 10000 * white.get(5, 0) + 50 * white.get(4, 0) + 20 * white.get(3, 0) + 10 * white.get(2, 0) + 5 * white.get(1, 0) \
-                - 10000 * black.get(5, 0) - 50 * black.get(4, 0) - 20 * black.get(3, 0) - 10 * black.get(2, 0) - 5 * black.get(1, 0)
+              - 10000 * black.get(5, 0) - 50 * black.get(4, 0) - 20 * black.get(3, 0) - 10 * black.get(2, 0) - 5 * black.get(1, 0)
+        
         if opp == BLACK:
             return -score
         return score
