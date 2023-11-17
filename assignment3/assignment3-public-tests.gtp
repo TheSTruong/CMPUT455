@@ -50,7 +50,7 @@ play b a3
 play w c1
 play b d3
 40 policy_moves
-#?[BlockWin a4 d1 e2 e5]
+#?[BlockWin a4 d1 e2 e4 e5]
 
 boardsize 5
 clear_board
@@ -97,9 +97,10 @@ play b b3
 play w e3
 play b f4
 play w b4
-80 genmove b
-#?[a4]
+80 policy_moves
+#?[BlockWin a4 c6 d6 e6]
 
+play b a4
 play w b6
 90 policy_moves
 #?[Capture c6 d6 e6]
