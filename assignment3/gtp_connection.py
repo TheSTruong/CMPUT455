@@ -44,6 +44,7 @@ class GtpConnection:
         self._debug_mode: bool = debug_mode
         self.go_engine = go_engine
         self.board: GoBoard = board
+        self.policy_is_random = True
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
             "quit": self.quit_cmd,
@@ -67,7 +68,8 @@ class GtpConnection:
             "gogui-rules_board": self.gogui_rules_board_cmd,
             "gogui-analyze_commands": self.gogui_analyze_cmd,
             "timelimit": self.timelimit_cmd,
-            "solve": self.solve_cmd
+            "solve": self.solve_cmd,
+            "policy": self.policy_cmd
         }
 
         # argmap is used for argument checking
@@ -394,6 +396,24 @@ class GtpConnection:
     Assignment 1 - game-specific commands end here
     ==========================================================================
     """
+
+    """
+    ==========================================================================
+    Assignment 3 - game-specific commands you have to implement or modify
+    ==========================================================================
+    """
+
+    def policy_cmd(self, args):
+        """
+        Sets the playout policy to be used from now on to the given type. 
+        The argument policytype is either "random" or "rule_based".
+        """
+        assert(len(args) == 1)
+        if (args[0] == "random"):
+            self.policy_is_random = True
+        elif (args[0] == "rule_based"):
+            self.policy_is_random = False
+        self.respond(self.policy_is_random)
 
 def point_to_coord(point: GO_POINT, boardsize: int) -> Tuple[int, int]:
     """
