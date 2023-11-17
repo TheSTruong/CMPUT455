@@ -69,7 +69,8 @@ class GtpConnection:
             "gogui-analyze_commands": self.gogui_analyze_cmd,
             "timelimit": self.timelimit_cmd,
             "solve": self.solve_cmd,
-            "policy": self.policy_cmd
+            "policy": self.policy_cmd,
+            "policy_moves": self.policy_moves_cmd
         }
 
         # argmap is used for argument checking
@@ -414,6 +415,16 @@ class GtpConnection:
         elif (args[0] == "rule_based"):
             self.policy_is_random = False
         self.respond(self.policy_is_random)
+
+    def policy_moves_cmd(self, args):
+        if (self.policy_is_random):
+            moveList = []
+            for move in self.board.get_empty_points():
+                move_coord = format_point(point_to_coord(move, self.board.size))
+                moveList.append(move_coord.lower())
+                moveList.sort()
+            self.respond("Random" + " " + " ".join(moveList))
+
 
 def point_to_coord(point: GO_POINT, boardsize: int) -> Tuple[int, int]:
     """
