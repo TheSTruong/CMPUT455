@@ -13,6 +13,7 @@ The board uses a 1-dimensional representation with padding
 
 import numpy as np
 from typing import List, Tuple
+from random import shuffle
 
 from board_base import (
     board_array_size,
@@ -58,6 +59,7 @@ class GoBoard(object):
             self.black_captures += 2
         elif color == WHITE:
             self.white_captures += 2
+    
     def get_captures(self, color: GO_COLOR) -> None:
         if color == BLACK:
             return self.black_captures
@@ -393,3 +395,29 @@ class GoBoard(object):
             if counter == 5 and prev != EMPTY:
                 return prev
         return EMPTY
+    
+    def winner(self, color):
+        if color == BLACK:
+            return self.detect_five_in_a_row() == BLACK or self.black_captures >= 10
+        elif color == WHITE:
+            return self.detect_five_in_a_row() == WHITE or self.white_captures >= 10
+        else:
+            return False
+
+    def endOfGame(self):
+        return self.get_empty_points().size == 0\
+            or self.detect_five_in_a_row() != EMPTY\
+            or self.black_captures >= 10\
+            or self.white_captures >= 10\
+            or self.end_of_game()
+    
+    def simulate(self, color):
+        to_play = color
+        if not self.endOfGame():
+            while not self.endOfGame():
+                all_moves = list(self.get_empty_points())
+                shuffle(all_moves)
+                to_play = opponent(to_play)
+                self.play_move(all_moves[0], to_play)
+
+        return self.winner(color)
