@@ -501,6 +501,15 @@ class GoBoard(object):
                 blocking_moves.append(move)
         return blocking_moves
     
+    def checkCapture(self, player) -> List[int]:
+        moveList = []
+        moves = self.get_empty_points()
+        for move in moves:
+            if self.capturePiecesCount(move, player) >= 2:
+                moveList.append(move)
+        return moveList
+
+    
     def simulateRules(self, color):
         """
         return: (MoveType, MoveList)
@@ -514,6 +523,10 @@ class GoBoard(object):
         result = self.checkBlockWin(color)
         if (len(result) > 0):
             return ("BlockWin", result)
+        
+        result = self.checkCapture(color)
+        if (len(result) > 0):
+            return ("Capture", result)
 
 
         # result = [self.generateRandomMove(board)]
