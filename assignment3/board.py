@@ -429,7 +429,8 @@ class GoBoard(object):
     """
     Rule-based Player
     """
-
+    ### UTIL FUNCTIONS ###
+    
     def getLinePositions(self):
         """
         Get the positions of each row, col, and diagonal.
@@ -442,6 +443,25 @@ class GoBoard(object):
         for line in self.diags:
             lines.append(line)
         return lines
+    
+    def getBoardsize(self):
+        return self.size
+    
+    def swapPlayerPattern(self, patterns):
+        for p in patterns:
+            for pt in range(len(p)):
+                if p[pt] == BLACK:
+                    p[pt] = WHITE
+
+    def getPattern(self, line, start, length):
+        pattern = []
+        if len(line) - start < length:
+            return pattern
+        for i in range(length):
+            pattern.append(self.get_color(line[i + start]))
+        return pattern
+    
+    ### RULE FUNCTIONS ###
     
     def checkWin(self, player) -> List[int]:
         """
@@ -478,31 +498,6 @@ class GoBoard(object):
                     winning_moves.append(emptyPos)
 
         return winning_moves
-
-    def swapPlayerPattern(self, patterns):
-        for p in patterns:
-            p.replace(BLACK, WHITE)
-
-    def checkOpenFour(self, player) -> List[int]:
-        """
-        if the color to play has a move that creates an open four position of type .XXXX., then play it.
-        """
-        patterns = [
-            [EMPTY, EMPTY, BLACK, BLACK, BLACK, EMPTY],    # ..XXX.
-            [EMPTY, BLACK, EMPTY, BLACK, BLACK, EMPTY],    # .X.XX.
-            [EMPTY, BLACK, BLACK, EMPTY, BLACK, EMPTY],    # .XX.X.
-            [EMPTY, BLACK, BLACK, BLACK, EMPTY, EMPTY]     # .XXX..
-        ]
-
-        if player == WHITE:
-            self.swapPlayerPattern(patterns)
-
-        lines = self.getLinePositions()
-        open_four = []
-        for l in lines:
-            for i in l:
-                pass
-        return self.getLinePositions()
     
     def checkBlockWin(self, player) -> List[int]:
         """
@@ -531,6 +526,38 @@ class GoBoard(object):
             if move not in blocking_moves:
                 blocking_moves.append(move)
         return blocking_moves
+
+    def checkOpenFour(self, player) -> List[int]:
+        """
+        if the color to play has a move that creates an open four position of type .XXXX., then play it.
+        """
+        patterns = [
+            [EMPTY, EMPTY, BLACK, BLACK, BLACK, EMPTY],    # ..XXX. mv = 1
+            [EMPTY, BLACK, EMPTY, BLACK, BLACK, EMPTY],    # .X.XX. mv = 2
+            [EMPTY, BLACK, BLACK, EMPTY, BLACK, EMPTY],    # .XX.X. mv = 3
+            [EMPTY, BLACK, BLACK, BLACK, EMPTY, EMPTY]     # .XXX.. mv = 4
+        ]
+
+        if player == WHITE:
+            self.swapPlayerPattern(patterns)
+
+        line_size = self.getBoardsize()
+        pattern_length = 6
+        comparisons = line_size - pattern_length + 1
+
+        lines = self.getLinePositions()
+        openfour_moves = []
+        
+        for line in lines:
+            for offset in range(comparisons):
+                pattern = self.getPattern(line, offset, pattern_length)
+                if pattern in patterns:
+                    i = patterns.index(pattern)
+                    move = line[(i + 1) + offset]
+                    if move not in openfour_moves:
+                        assert self.get_color(move) == EMPTY
+                        openfour_moves.append(move)
+        return openfour_moves
     
     def checkCapture(self, player) -> List[int]:
         moveList = []
@@ -539,32 +566,6 @@ class GoBoard(object):
             if self.capturePiecesCount(move, player) >= 2:
                 moveList.append(move)
         return moveList
-
-    def simulateRules(self, color):
-        """
-        return: (MoveType, MoveList)
-        MoveType: {"Win", "BlockWin", "OpenFour", "BlockOpenFour", "Random"}
-        MoveList: an unsorted List[int], each element is a move
-        """
-        result = self.checkWin(color)
-        if (len(result) > 0):
-            return ("Win", result)
-        
-        result = self.checkBlockWin(color)
-        if (len(result) > 0):
-            return ("BlockWin", result)
-        
-        result = self.checkOpenFour(color)
-        if result:
-            return ("OpenFour", result)
-        
-        result = self.checkCapture(color)
-        if (len(result) > 0):
-            return ("Capture", result)
-
-        # result = [self.generateRandomMove(board)]
-        result = self.get_empty_points()
-        return ("Random", result)
     
     def capturePiecesCount(self, point, color):
             capturesThisTurn = 0
@@ -652,3 +653,29 @@ class GoBoard(object):
             if (self.board[upRightIndex] == color and countUpRight == 2):
                 capturesThisTurn += countUpRight
             return capturesThisTurn
+    
+    def simulateRules(self, color):
+        """
+        return: (MoveType, MoveList)
+        MoveType: {"Win", "BlockWin", "OpenFour", "BlockOpenFour", "Random"}
+        MoveList: an unsorted List[int], each element is a move
+        """
+        result = self.checkWin(color)
+        if (len(result) > 0):
+            return ("Win", result)
+        
+        result = self.checkBlockWin(color)
+        if (len(result) > 0):
+            return ("BlockWin", result)
+        
+        result = self.checkOpenFour(color)
+        if result:
+            return ("OpenFour", result)
+        
+        result = self.checkCapture(color)
+        if (len(result) > 0):
+            return ("Capture", result)
+
+        # result = [self.generateRandomMove(board)]
+        result = self.get_empty_points()
+        return ("Random", result)
