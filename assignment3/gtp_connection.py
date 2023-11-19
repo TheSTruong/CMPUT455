@@ -44,7 +44,13 @@ class GtpConnection:
         self._debug_mode: bool = debug_mode
         self.go_engine = go_engine
         self.board: GoBoard = board
+
         self.policy_is_random = True
+        from Ninuki import SimulationFlatMC, ruleBasedSimulation
+        self.random_simulation = SimulationFlatMC()
+        self.rule_based_simulation = ruleBasedSimulation()
+
+
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
             "quit": self.quit_cmd,
@@ -359,30 +365,6 @@ class GtpConnection:
     Assignment 2 - game-specific commands you have to implement or modify
     ==========================================================================
     """
-
-    def genmove_cmd(self, args: List[str]) -> None:
-        """ 
-        Modify this function for Assignment 2.
-        """
-        board_color = args[0].lower()
-        color = color_to_int(board_color)
-        result1 = self.board.detect_five_in_a_row()
-        result2 = EMPTY
-        if self.board.get_captures(opponent(color)) >= 10:
-            result2 = opponent(color)
-        if result1 == opponent(color) or result2 == opponent(color):
-            self.respond("resign")
-            return
-        legal_moves = self.board.get_empty_points()
-        if legal_moves.size == 0:
-            self.respond("pass")
-            return
-        rng = np.random.default_rng()
-        choice = rng.choice(len(legal_moves))
-        move = legal_moves[choice]
-        move_coord = point_to_coord(move, self.board.size)
-        move_as_string = format_point(move_coord)
-        self.play_cmd([board_color, move_as_string, 'print_move'])
     
     def timelimit_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
@@ -414,17 +396,60 @@ class GtpConnection:
             self.policy_is_random = True
         elif (args[0] == "rule_based"):
             self.policy_is_random = False
-        self.respond(self.policy_is_random)
 
     def policy_moves_cmd(self, args):
+        moveList = []
         if (self.policy_is_random):
-            moveList = []
             for move in self.board.get_empty_points():
                 move_coord = format_point(point_to_coord(move, self.board.size))
                 moveList.append(move_coord.lower())
                 moveList.sort()
             self.respond("Random" + " " + " ".join(moveList))
+        else:
+            move_type, move_list = self.board.simulateRules(self.board.current_player)
+            for move in move_list:
+                move_coord = format_point(point_to_coord(move, self.board.size))
+                moveList.append(move_coord.lower())
+                moveList.sort()
+            self.respond(move_type + " " + " ".join(moveList))
 
+    def genmove_cmd(self, args: List[str]) -> None:
+        """ 
+        Modify this function for Assignment 3.
+        """
+        # result1 = self.board.detect_five_in_a_row()
+        # result2 = EMPTY
+        # if self.board.get_captures(opponent(color)) >= 10:
+        #     result2 = opponent(color)
+        # if result1 == opponent(color) or result2 == opponent(color):
+        #     self.respond("resign")
+        #     return
+        # legal_moves = self.board.get_empty_points()
+        # if legal_moves.size == 0:
+        #     self.respond("pass")
+        #     return
+        # rng = np.random.default_rng()
+        # choice = rng.choice(len(legal_moves))
+        # move = legal_moves[choice]
+        # move_coord = point_to_coord(move, self.board.size)
+        # move_as_string = format_point(move_coord)
+        # self.play_cmd([board_color, move_as_string, 'print_move'])
+
+        board_color = args[0].lower()
+        color = color_to_int(board_color)
+        if (self.policy_is_random):
+            move = self.random_simulation.genmove(self.board, color)
+            self.board.play_move(move, color)
+            move_coord = format_point(point_to_coord(move, self.board.size)).lower()
+            self.respond(move_coord)
+        else:
+            moveList = []
+            move_type, move_list = self.board.simulateRules(self.board.current_player)
+            for move in move_list:
+                move_coord = format_point(point_to_coord(move, self.board.size))
+                moveList.append(move_coord.lower())
+                moveList.sort()
+            self.respond(" ".join(moveList))
 
 def point_to_coord(point: GO_POINT, boardsize: int) -> Tuple[int, int]:
     """
