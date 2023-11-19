@@ -443,9 +443,13 @@ class GtpConnection:
             move_coord = format_point(point_to_coord(move, self.board.size)).lower()
             self.respond(move_coord)
         else:
-            # self.respond()
-            move = self.rule_based_simulation.genmove(self.board, color)
-            print(move, "Move list")
+            moveList = []
+            move_type, move_list = self.board.simulateRules(self.board.current_player)
+            for move in move_list:
+                move_coord = format_point(point_to_coord(move, self.board.size))
+                moveList.append(move_coord.lower())
+                moveList.sort()
+            self.respond(" ".join(moveList))
 
 def point_to_coord(point: GO_POINT, boardsize: int) -> Tuple[int, int]:
     """

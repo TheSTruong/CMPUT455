@@ -441,13 +441,23 @@ class GoBoard(object):
         """
         Check if the current player can win directly, return all winning moves if exist, [] otherwise.
         """
-        # current = player
+        
+        # Check for 5 in a row
         opp = opponent(player)
         winning_moves = []
-        for line in self.lines:
+        for line in self.getLinePositions():
             for i in range(len(line) - 4):
                 emptyPos = -1
                 for pos in line[i: i + 5]:  # get five consecutive positions in a line
+                    # Check for capture win
+                    if player == BLACK:
+                        if self.capturePiecesCount(pos, player) + self.black_captures >= 10:
+                            if pos not in winning_moves:
+                                winning_moves.append(pos)
+                    elif player == WHITE:
+                        if self.capturePiecesCount(pos, player) + self.white_captures >= 10:
+                            if pos not in winning_moves:
+                                winning_moves.append(pos)
                     color = self.get_color(pos)
                     if color == EMPTY:
                         if emptyPos == -1:
@@ -460,7 +470,36 @@ class GoBoard(object):
                         break
                 if emptyPos != -1 and emptyPos not in winning_moves:
                     winning_moves.append(emptyPos)
+
         return winning_moves
+    
+    def checkBlockWin(self, player) -> List[int]:
+        """
+        Check if the opponent can win directly, return all blocking moves if exist, [] otherwise.
+        e.g.
+        oo.oo, .oooo.
+        """
+        # current = self.board.current_player
+        self.current_player = opponent(player)
+        # if the opponent can win directly, then only play a move that blocks the win
+        # Checks for 5 in a row or capture > 10 blocks
+        blocking_moves = self.checkWin(self.current_player)
+        self.current_player = player     # reset the current player
+
+        stallList = []
+        moves = self.get_empty_points()
+        for move in moves:
+            cBoard = self.copy()
+            if cBoard.capturePiecesCount(move, player) >= 2:
+                cBoard.play_move(move, player)
+                reducedCheckList = cBoard.checkWin(opponent(player))
+                if len(reducedCheckList) < len(blocking_moves):
+                    stallList.append(move)
+
+        for move in stallList:
+            if move not in blocking_moves:
+                blocking_moves.append(move)
+        return blocking_moves
     
     def simulateRules(self, color):
         """
@@ -468,13 +507,103 @@ class GoBoard(object):
         MoveType: {"Win", "BlockWin", "OpenFour", "BlockOpenFour", "Random"}
         MoveList: an unsorted List[int], each element is a move
         """
-        self.lines = self.getLinePositions()
         result = self.checkWin(color)
         if (len(result) > 0):
             return ("Win", result)
+        
+        result = self.checkBlockWin(color)
+        if (len(result) > 0):
+            return ("BlockWin", result)
 
 
         # result = [self.generateRandomMove(board)]
         result = self.get_empty_points()
         return ("Random", result)
+    
+    def capturePiecesCount(self, point, color):
+            capturesThisTurn = 0
+            
+            #Horizontal capture
+            leftIndex = point - 1
+            rightIndex = point + 1
+            countLeft = 0
+            countRight = 0
+            captureList = []
+            opp_color = opponent(color) 
+            while (self.board[leftIndex] == opp_color):
+                    captureList.append(leftIndex)
+                    countLeft += 1
+                    leftIndex -= 1
+            if (self.board[leftIndex] == color and countLeft == 2):
+                capturesThisTurn += countLeft
+
+            captureList.clear()
+            while (self.board[rightIndex] == opp_color):
+                    captureList.append(rightIndex)
+                    rightIndex += 1
+                    countRight += 1   
+            if (self.board[rightIndex] == color and countRight == 2):
+                capturesThisTurn += countRight  
+                    
+
+            #Vertical capture
+            downIndex = point - self.NS
+            upIndex = point + self.NS
+            countUp = 0
+            countDown = 0
+            captureList = []
+            opp_color = opponent(color) 
+            while (self.board[downIndex] == opp_color):
+                    captureList.append(downIndex)
+                    countDown += 1
+                    downIndex -= self.NS
+            if (self.board[downIndex] == color and countDown == 2):
+                capturesThisTurn += countDown
+            captureList.clear()
+            while (self.board[upIndex] == opp_color):
+                    captureList.append(upIndex)
+                    upIndex += self.NS
+                    countUp += 1   
+            if (self.board[upIndex] == color and countUp == 2):
+                capturesThisTurn += countUp
+              
+            #Diagonal Captures
+            captureList = []
+            upLeftIndex = point + self.NS - 1
+            countUpLeft = 0
+            downRightIndex = point - (self.NS - 1)
+            countDownRight = 0
+            while (self.board[upLeftIndex] == opp_color):
+                    captureList.append(upLeftIndex)
+                    countUpLeft += 1
+                    upLeftIndex += self.NS - 1
+            if (self.board[upLeftIndex] == color and countUpLeft == 2):
+                capturesThisTurn += countUpLeft
+                
+            while (self.board[downRightIndex] == opp_color):
+                    captureList.append(downRightIndex)
+                    countDownRight += 1
+                    downRightIndex -= (self.NS - 1)
+            if (self.board[downRightIndex] == color and countDownRight == 2):
+                capturesThisTurn += countDownRight
+
+            captureList = []
+            downLeftIndex = point - (self.NS + 1)
+            countDownLeft = 0
+            upRightIndex = point + self.NS + 1
+            countUpRight = 0
+            while (self.board[downLeftIndex] == opp_color):
+                    captureList.append(downLeftIndex)
+                    countDownLeft += 1
+                    downLeftIndex -= (self.NS + 1)
+            if (self.board[downLeftIndex] == color and countDownLeft == 2):
+                capturesThisTurn += countDownLeft
+                    
+            while (self.board[upRightIndex] == opp_color):
+                    captureList.append(upRightIndex)
+                    countUpRight += 1
+                    upRightIndex += self.NS + 1
+            if (self.board[upRightIndex] == color and countUpRight == 2):
+                capturesThisTurn += countUpRight
+            return capturesThisTurn
     
