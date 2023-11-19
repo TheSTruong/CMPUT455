@@ -397,6 +397,7 @@ class GtpConnection:
             self.policy_is_random = True
         elif (args[0] == "rule_based"):
             self.policy_is_random = False
+        self.respond()
 
     def policy_moves_cmd(self, args):
         moveList = []
