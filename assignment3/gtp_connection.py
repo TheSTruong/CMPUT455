@@ -11,6 +11,7 @@ at the University of Edinburgh.
 import traceback
 import numpy as np
 import re
+import random
 from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
 
@@ -449,7 +450,7 @@ class GtpConnection:
                 move_coord = format_point(point_to_coord(move, self.board.size))
                 moveList.append(move_coord.lower())
                 moveList.sort()
-            self.respond(" ".join(moveList))
+            self.respond(random.choice(moveList))
 
 def point_to_coord(point: GO_POINT, boardsize: int) -> Tuple[int, int]:
     """
