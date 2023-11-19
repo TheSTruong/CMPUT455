@@ -396,6 +396,8 @@ class GtpConnection:
             self.policy_is_random = True
         elif (args[0] == "rule_based"):
             self.policy_is_random = False
+        
+        self.respond()
 
     def policy_moves_cmd(self, args):
         moveList = []
@@ -443,7 +445,6 @@ class GtpConnection:
             move_coord = format_point(point_to_coord(move, self.board.size)).lower()
             self.respond(move_coord)
         else:
-            # self.respond()
             move = self.rule_based_simulation.genmove(self.board, color)
             print(move, "Move list")
 
