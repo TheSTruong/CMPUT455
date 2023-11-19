@@ -450,7 +450,7 @@ class GtpConnection:
                 move_coord = format_point(point_to_coord(move, self.board.size))
                 moveList.append(move_coord.lower())
                 moveList.sort()
-            self.respond(random.choice(move_list))
+            self.respond(random.choice(moveList))
 
 def point_to_coord(point: GO_POINT, boardsize: int) -> Tuple[int, int]:
     """
