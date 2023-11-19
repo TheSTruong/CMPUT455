@@ -548,15 +548,17 @@ class GoBoard(object):
         lines = self.getLinePositions()
         openfour_moves = []
         
-        for line in lines:
-            for offset in range(comparisons):
-                pattern = self.getPattern(line, offset, pattern_length)
-                if pattern in patterns:
-                    i = patterns.index(pattern)
-                    move = line[(i + 1) + offset]
-                    if move not in openfour_moves:
-                        assert self.get_color(move) == EMPTY
-                        openfour_moves.append(move)
+        if comparisons > 0:
+            for line in lines:
+                for offset in range(comparisons):
+                    pattern = self.getPattern(line, offset, pattern_length)
+                    if pattern in patterns:
+                        i = patterns.index(pattern)
+                        move = line[(i + 1) + offset]
+                        if move not in openfour_moves:
+                            assert self.get_color(move) == EMPTY
+                            openfour_moves.append(move)
+
         return openfour_moves
     
     def checkCapture(self, player) -> List[int]:
