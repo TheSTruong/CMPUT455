@@ -396,7 +396,11 @@ class GoBoard(object):
                 return prev
         return EMPTY
     
-    def winner(self, color):
+    """
+    Simulation-based Player
+    """
+
+    def winner(self, color) -> bool:
         if color == BLACK:
             return self.detect_five_in_a_row() == BLACK or self.black_captures >= 10
         elif color == WHITE:
@@ -404,14 +408,14 @@ class GoBoard(object):
         else:
             return False
 
-    def endOfGame(self):
+    def endOfGame(self) -> bool:
         return self.get_empty_points().size == 0\
             or self.detect_five_in_a_row() != EMPTY\
             or self.black_captures >= 10\
             or self.white_captures >= 10\
             or self.end_of_game()
     
-    def simulate(self, color):
+    def simulate(self, color) -> bool:
         to_play = color
         if not self.endOfGame():
             while not self.endOfGame():
@@ -422,7 +426,9 @@ class GoBoard(object):
 
         return self.winner(color)
 
-    #Rule based starts here
+    """
+    Rule-based Player
+    """
 
     def getLinePositions(self):
         """
@@ -472,6 +478,31 @@ class GoBoard(object):
                     winning_moves.append(emptyPos)
 
         return winning_moves
+
+    def swapPlayerPattern(self, patterns):
+        for p in patterns:
+            p.replace(BLACK, WHITE)
+
+    def checkOpenFour(self, player) -> List[int]:
+        """
+        if the color to play has a move that creates an open four position of type .XXXX., then play it.
+        """
+        patterns = [
+            [EMPTY, EMPTY, BLACK, BLACK, BLACK, EMPTY],    # ..XXX.
+            [EMPTY, BLACK, EMPTY, BLACK, BLACK, EMPTY],    # .X.XX.
+            [EMPTY, BLACK, BLACK, EMPTY, BLACK, EMPTY],    # .XX.X.
+            [EMPTY, BLACK, BLACK, BLACK, EMPTY, EMPTY]     # .XXX..
+        ]
+
+        if player == WHITE:
+            self.swapPlayerPattern(patterns)
+
+        lines = self.getLinePositions()
+        open_four = []
+        for l in lines:
+            for i in l:
+                pass
+        return self.getLinePositions()
     
     def checkBlockWin(self, player) -> List[int]:
         """
@@ -509,7 +540,6 @@ class GoBoard(object):
                 moveList.append(move)
         return moveList
 
-    
     def simulateRules(self, color):
         """
         return: (MoveType, MoveList)
@@ -524,10 +554,13 @@ class GoBoard(object):
         if (len(result) > 0):
             return ("BlockWin", result)
         
+        result = self.checkOpenFour(color)
+        if result:
+            return ("OpenFour", result)
+        
         result = self.checkCapture(color)
         if (len(result) > 0):
             return ("Capture", result)
-
 
         # result = [self.generateRandomMove(board)]
         result = self.get_empty_points()
@@ -619,4 +652,3 @@ class GoBoard(object):
             if (self.board[upRightIndex] == color and countUpRight == 2):
                 capturesThisTurn += countUpRight
             return capturesThisTurn
-    

@@ -1,0 +1,12 @@
+clear_board
+boardsize 7
+policy rule_based
+play b c3
+play w c4
+play b d3
+play w d4
+play b f3
+play w e4
+play b a3
+60 policy_moves
+#?[OpenFour b4 f4]
