@@ -421,3 +421,60 @@ class GoBoard(object):
                 self.play_move(all_moves[0], to_play)
 
         return self.winner(color)
+
+    #Rule based starts here
+
+    def getLinePositions(self):
+        """
+        Get the positions of each row, col, and diagonal.
+        """
+        lines = []
+        for line in self.rows:
+            lines.append(line)
+        for line in self.cols:
+            lines.append(line)
+        for line in self.diags:
+            lines.append(line)
+        return lines
+    
+    def checkWin(self, player) -> List[int]:
+        """
+        Check if the current player can win directly, return all winning moves if exist, [] otherwise.
+        """
+        # current = player
+        opp = opponent(player)
+        winning_moves = []
+        for line in self.lines:
+            for i in range(len(line) - 4):
+                emptyPos = -1
+                for pos in line[i: i + 5]:  # get five consecutive positions in a line
+                    color = self.get_color(pos)
+                    if color == EMPTY:
+                        if emptyPos == -1:
+                            emptyPos = pos
+                        else:   # more than 1 empty pos in this line
+                            emptyPos = -1
+                            break
+                    elif color == opp:
+                        emptyPos = -1
+                        break
+                if emptyPos != -1 and emptyPos not in winning_moves:
+                    winning_moves.append(emptyPos)
+        return winning_moves
+    
+    def simulateRules(self, color):
+        """
+        return: (MoveType, MoveList)
+        MoveType: {"Win", "BlockWin", "OpenFour", "BlockOpenFour", "Random"}
+        MoveList: an unsorted List[int], each element is a move
+        """
+        self.lines = self.getLinePositions()
+        result = self.checkWin(color)
+        if (len(result) > 0):
+            return ("Win", result)
+
+
+        # result = [self.generateRandomMove(board)]
+        result = self.get_empty_points()
+        return ("Random", result)
+    

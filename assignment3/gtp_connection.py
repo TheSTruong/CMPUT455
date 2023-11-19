@@ -46,8 +46,10 @@ class GtpConnection:
         self.board: GoBoard = board
 
         self.policy_is_random = True
-        from Ninuki import SimulationFlatMC
+        from Ninuki import SimulationFlatMC, ruleBasedSimulation
         self.random_simulation = SimulationFlatMC()
+        self.rule_based_simulation = ruleBasedSimulation()
+
 
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
@@ -394,16 +396,22 @@ class GtpConnection:
             self.policy_is_random = True
         elif (args[0] == "rule_based"):
             self.policy_is_random = False
-        self.respond(self.policy_is_random)
 
     def policy_moves_cmd(self, args):
+        moveList = []
         if (self.policy_is_random):
-            moveList = []
             for move in self.board.get_empty_points():
                 move_coord = format_point(point_to_coord(move, self.board.size))
                 moveList.append(move_coord.lower())
                 moveList.sort()
             self.respond("Random" + " " + " ".join(moveList))
+        else:
+            move_type, move_list = self.board.simulateRules(self.board.current_player)
+            for move in move_list:
+                move_coord = format_point(point_to_coord(move, self.board.size))
+                moveList.append(move_coord.lower())
+                moveList.sort()
+            self.respond(move_type + " " + " ".join(moveList))
 
     def genmove_cmd(self, args: List[str]) -> None:
         """ 
@@ -436,7 +444,8 @@ class GtpConnection:
             self.respond(move_coord)
         else:
             # self.respond()
-            pass
+            move = self.rule_based_simulation.genmove(self.board, color)
+            print(move, "Move list")
 
 def point_to_coord(point: GO_POINT, boardsize: int) -> Tuple[int, int]:
     """

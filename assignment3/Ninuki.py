@@ -75,6 +75,43 @@ class SimulationFlatMC:
                 wins += 1
         eval = wins / self.num_simulations
         return eval
+
+class ruleBasedSimulation:
+    """
+    A rule simulation-based "Flat Monte Carlo" player. 
+    A simulation consists of a series of moves where we restrict the number of moves that we choose from during simulation. 
+    ends when the game is over (win or draw).
+    The player runs N=10 simulations for each legal move, and picks one move with highest win percentage. 
+    You are free to break ties between equally good moves in any way you wish.
+    Your player should pass only when the game is over.
+    """
+    def __init__(self):
+        self.num_simulations = 10
+
+    def genmove(self, board, color):
+        assert not board.endOfGame()
+        moves = board.get_empty_points()
+        numMoves = len(moves)
+        moveWins = [0] * numMoves
+        for i in range(numMoves):
+            move = moves[i]
+            moveWins[i] = self.simulate_move(board, move, color)
+        bestIndex = moveWins.index(max(moveWins))    # break ties by first occurrence in moves
+        best = moves[bestIndex]
+        assert best in moves
+        return best
+    
+    def simulate_move(self, board, move, color):
+        wins = 0
+        cboard = board.copy()
+        cboard.play_move(move, color)
+        for _ in range(self.num_simulations):
+            winner = cboard.copy().simulateRules(color)
+            if winner:
+                wins += 1
+        eval = wins / self.num_simulations
+        return eval
+
     
 if __name__ == "__main__":
     run()
