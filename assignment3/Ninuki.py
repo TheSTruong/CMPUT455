@@ -90,7 +90,7 @@ class ruleBasedSimulation:
 
     def genmove(self, board, color):
         assert not board.endOfGame()
-        moves = board.get_empty_points()
+        moves = board.simulateRules(color)[1]
         numMoves = len(moves)
         moveWins = [0] * numMoves
         for i in range(numMoves):
@@ -106,7 +106,7 @@ class ruleBasedSimulation:
         cboard = board.copy()
         cboard.play_move(move, color)
         for _ in range(self.num_simulations):
-            winner = cboard.copy().simulateRules(color)
+            winner = cboard.copy().simulate(color)
             if winner:
                 wins += 1
         eval = wins / self.num_simulations
