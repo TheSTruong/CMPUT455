@@ -11,6 +11,7 @@ from board_base import DEFAULT_SIZE, GO_POINT, GO_COLOR
 from board import GoBoard
 from board_util import GoBoardUtil
 from engine import GoEngine
+import random
 
 class Go0(GoEngine):
     def __init__(self) -> None:
@@ -60,8 +61,13 @@ class SimulationFlatMC:
         for i in range(numMoves):
             move = moves[i]
             moveWins[i] = self.simulate_move(board, move, color)
-        bestIndex = moveWins.index(max(moveWins))    # break ties by first occurrence in moves
-        best = moves[bestIndex]
+        bestIndex = moveWins.index(max(moveWins))
+        bestScore = moveWins[bestIndex]
+        ties = []
+        for i in range(numMoves):
+            if bestScore == moveWins[i]:
+                ties.append(moves[i])
+        best = random.choice(ties)
         assert best in moves
         return best
     
@@ -96,8 +102,13 @@ class ruleBasedSimulation:
         for i in range(numMoves):
             move = moves[i]
             moveWins[i] = self.simulate_move(board, move, color)
-        bestIndex = moveWins.index(max(moveWins))    # break ties by first occurrence in moves
-        best = moves[bestIndex]
+        bestIndex = moveWins.index(max(moveWins))
+        bestScore = moveWins[bestIndex]
+        ties = []
+        for i in range(numMoves):
+            if bestScore == moveWins[i]:
+                ties.append(moves[i])
+        best = random.choice(ties)
         assert best in moves
         return best
     
