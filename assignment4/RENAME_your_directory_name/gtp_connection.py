@@ -360,7 +360,7 @@ class GtpConnection:
         Modify this function for Assignment 4.
         """
         board_color = args[0].lower()
-        self.best_move = self.engine.get_move(self.board, board_color)
+        # self.best_move = self.engine.get_move(self.board, board_color)
         self.play_cmd([board_color, self.engine.get_move(self.board, board_color), 'print_move'])
     
     def timelimit_cmd(self, args: List[str]) -> None:

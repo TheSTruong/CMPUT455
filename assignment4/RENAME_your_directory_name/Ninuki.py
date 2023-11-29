@@ -12,6 +12,7 @@ from board_util import GoBoardUtil
 from engine import GoEngine
 import time
 import random
+from node import Node
 
 # timelimit
 from signal_handler import timeout_handler
@@ -65,6 +66,11 @@ class A4SubmissionPlayer(GoEngine):
         Implement for assignment 4
         Returns the best move
         """
+        color = self.color_to_int(color)
+        mcts = MCTSUCT(board, color)
+        move_pt = mcts.genmove()
+        move_coord = format_point(point_to_coord(move_pt, board.size)).lower()
+        return move_coord
         try:
             signal.alarm(self.time_limit)    # set time_limit alarm
             # use solver to get move
@@ -73,7 +79,63 @@ class A4SubmissionPlayer(GoEngine):
             # what to do after time expires
         else:
             signal.alarm(0)    # disable timelimit alarm
+    
+    def color_to_int(self, c: str) -> int:
+        """convert character to the appropriate integer code"""
+        color_to_int = {"b": BLACK, "w": WHITE, "e": EMPTY, "BORDER": BORDER}
+        return color_to_int[c]
 
+class MCTSUCT:
+    def __init__(self, board, color):
+        self.board = board
+        self.color = color
+        self.moves = self.board.get_empty_points()
+        self.root = Node(board, color, random.choice(self.moves), parent=Node(board, color, random.choice(self.moves)))
+        self.numSims = 100
+        self.explorationConstant = 3
+
+    def genmove(self):
+        for _ in range(self.numSims):
+            node = self.selection()
+            self.expansion(node)
+            eval = self.simulation(node)
+            self.backpropogation(node, eval)
+    
+        bestMove = self.root.bestMove()
+        return bestMove
+
+    
+    def selection(self):
+        # traversing through tree to get to leaf node
+        current = self.root
+        isMaxNode = True
+        while current.expanded:
+            bestMove = current.bestChild(self.explorationConstant, isMaxNode) # move selection based on tree policy
+            if bestMove not in current.children:
+                current.addChild(bestMove)
+            current = current.children[bestMove]
+            isMaxNode = not isMaxNode
+        return current # reached leaf node
+    
+    def expansion(self, node):
+        node.expanded = True
+    
+    def simulation(self, node):
+        wins = 0
+        for _ in range(30):
+            cboard = node.board.copy()
+            winner = cboard.copy().simulate(node.color)
+            if winner:
+                wins += 1
+        eval = wins / self.numSims
+        return eval
+
+    def backpropogation(self, node, eval):
+        current = node
+        while current.parent is not None:
+            current.incNumVisits()
+            current.setEval(eval)
+            current = current.parent
 
 def run() -> None:
     """

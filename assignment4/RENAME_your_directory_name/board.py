@@ -12,6 +12,7 @@ The board uses a 1-dimensional representation with padding
 """
 
 import numpy as np
+import random
 from typing import List, Tuple
 
 from board_base import (
@@ -49,12 +50,73 @@ class GoBoard(object):
         """
         assert 2 <= size <= MAXSIZE
         self.reset(size)
+        self.calculate_rows_cols_diags()
         self.black_captures = 0
         self.white_captures = 0
         self.depth = 0
         self.black_capture_history = []
         self.white_capture_history = []
         self.move_history = []
+    
+    def calculate_rows_cols_diags(self) -> None:
+        if self.size < 5:
+            return
+        # precalculate all rows, cols, and diags for 5-in-a-row detection
+        self.rows = []
+        self.cols = []
+        for i in range(1, self.size + 1):
+            current_row = []
+            start = self.row_start(i)
+            for pt in range(start, start + self.size):
+                current_row.append(pt)
+            self.rows.append(current_row)
+            
+            start = self.row_start(1) + i - 1
+            current_col = []
+            for pt in range(start, self.row_start(self.size) + i, self.NS):
+                current_col.append(pt)
+            self.cols.append(current_col)
+        
+        self.diags = []
+        # diag towards SE, starting from first row (1,1) moving right to (1,n)
+        start = self.row_start(1)
+        for i in range(start, start + self.size):
+            diag_SE = []
+            pt = i
+            while self.get_color(pt) == EMPTY:
+                diag_SE.append(pt)
+                pt += self.NS + 1
+            if len(diag_SE) >= 5:
+                self.diags.append(diag_SE)
+        # diag towards SE and NE, starting from (2,1) downwards to (n,1)
+        for i in range(start + self.NS, self.row_start(self.size) + 1, self.NS):
+            diag_SE = []
+            diag_NE = []
+            pt = i
+            while self.get_color(pt) == EMPTY:
+                diag_SE.append(pt)
+                pt += self.NS + 1
+            pt = i
+            while self.get_color(pt) == EMPTY:
+                diag_NE.append(pt)
+                pt += -1 * self.NS + 1
+            if len(diag_SE) >= 5:
+                self.diags.append(diag_SE)
+            if len(diag_NE) >= 5:
+                self.diags.append(diag_NE)
+        # diag towards NE, starting from (n,2) moving right to (n,n)
+        start = self.row_start(self.size) + 1
+        for i in range(start, start + self.size):
+            diag_NE = []
+            pt = i
+            while self.get_color(pt) == EMPTY:
+                diag_NE.append(pt)
+                pt += -1 * self.NS + 1
+            if len(diag_NE) >=5:
+                self.diags.append(diag_NE)
+        assert len(self.rows) == self.size
+        assert len(self.cols) == self.size
+        assert len(self.diags) == (2 * (self.size - 5) + 1) * 2
 
     def add_two_captures(self, color: GO_COLOR) -> None:
         if color == BLACK:
@@ -313,3 +375,94 @@ class GoBoard(object):
         state += str(self.black_captures)
         state += str(self.white_captures)
         return state
+    
+    def endOfGame(self) -> bool:
+        return self.get_empty_points().size == 0\
+            or self.detect_five_in_a_row() != EMPTY\
+            or self.black_captures >= 10\
+            or self.white_captures >= 10\
+            or self.end_of_game()
+    
+    def detect_five_in_a_row(self) -> GO_COLOR:
+        """
+        Returns BLACK or WHITE if any five in a row is detected for the color
+        EMPTY otherwise.
+        """
+        for r in self.rows:
+            result = self.has_five_in_list(r)
+            if result != EMPTY:
+                return result
+        for c in self.cols:
+            result = self.has_five_in_list(c)
+            if result != EMPTY:
+                return result
+        for d in self.diags:
+            result = self.has_five_in_list(d)
+            if result != EMPTY:
+                return result
+        return EMPTY
+
+    def has_five_in_list(self, list) -> GO_COLOR:
+        """
+        Returns BLACK or WHITE if any five in a rows exist in the list.
+        EMPTY otherwise.
+        """
+        prev = BORDER
+        counter = 1
+        for stone in list:
+            if self.get_color(stone) == prev:
+                counter += 1
+            else:
+                counter = 1
+                prev = self.get_color(stone)
+            if counter == 5 and prev != EMPTY:
+                return prev
+        return EMPTY
+    
+    """
+    Simulation-based Player
+    """
+
+    def winner(self, color) -> bool:
+        if color == BLACK:
+            return self.detect_five_in_a_row() == BLACK or self.black_captures >= 10
+        elif color == WHITE:
+            return self.detect_five_in_a_row() == WHITE or self.white_captures >= 10
+        else:
+            return False
+    
+    def simulate(self, color) -> bool:
+        to_play = color
+        if not self.endOfGame():
+            while not self.endOfGame():
+                all_moves = self.get_empty_points()
+                to_play = opponent(to_play)
+                self.play_move(random.choice(all_moves), to_play)
+
+        return self.is_terminal()
+    
+    def simulateRules(self, color):
+        """
+        return: (MoveType, MoveList)
+        MoveType: {"Win", "BlockWin", "OpenFour", "BlockOpenFour", "Random"}
+        MoveList: an unsorted List[int], each element is a move
+        """
+        result = self.checkWin(color)
+        if (len(result) > 0):
+            return ("Win", result)
+        
+        result = self.checkBlockWin(color)
+        if (len(result) > 0):
+            return ("BlockWin", result)
+        
+        result = self.checkOpenFour(color)
+        if result:
+            return ("OpenFour", result)
+        
+        result = self.checkCapture(color)
+        if (len(result) > 0):
+            return ("Capture", result)
+
+        # result = [self.generateRandomMove(board)]
+        result = self.get_empty_points()
+        return ("Random", result)

@@ -1,7 +1,7 @@
 import pexpect
 
 #Change the paths here to test different players
-player1='random_player/Ninuki-random.py'
+player1='RENAME_your_directory_name/Ninuki.py'
 player2='ab_player/Ninuki-ab.py'
 
 #Change the timeout to test different time limits
