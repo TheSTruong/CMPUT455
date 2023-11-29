@@ -12,7 +12,7 @@ from board_util import GoBoardUtil
 from engine import GoEngine
 import time
 import random
-from node import Node
+from node import Node, PreRootNode
 
 # timelimit
 from signal_handler import timeout_handler
@@ -90,9 +90,9 @@ class MCTSUCT:
         self.board = board
         self.color = color
         self.moves = self.board.get_empty_points()
-        self.root = Node(board, color, random.choice(self.moves), parent=Node(board, color, random.choice(self.moves)))
-        self.numSims = 100
-        self.explorationConstant = 3
+        self.root = Node(board, color, move=None, parent=PreRootNode())
+        self.numSims = 1000
+        self.explorationConstant = 1.41 # 0.5 was okay
 
     def genmove(self):
         for _ in range(self.numSims):
@@ -101,14 +101,23 @@ class MCTSUCT:
             eval = self.simulation(node)
             self.backpropogation(node, eval)
     
-        bestMove = self.root.bestMove()
+        self.root.pprint()
+        maxNode = None
+        if self.root.color == BLACK:
+            maxNode = True
+        else:
+            maxNode = False
+        bestMove = self.root.bestMove(maxNode)
+        print(bestMove)
         return bestMove
-
     
     def selection(self):
         # traversing through tree to get to leaf node
         current = self.root
-        isMaxNode = True
+        if current.color == BLACK:
+            isMaxNode = True
+        else:
+            isMaxNode = False
         while current.expanded:
             bestMove = current.bestChild(self.explorationConstant, isMaxNode) # move selection based on tree policy
             if bestMove not in current.children:
@@ -121,14 +130,14 @@ class MCTSUCT:
         node.expanded = True
     
     def simulation(self, node):
-        wins = 0
-        for _ in range(30):
-            cboard = node.board.copy()
-            winner = cboard.copy().simulate(node.color)
-            if winner:
-                wins += 1
-        eval = wins / self.numSims
-        return eval
+        cboard = node.board.copy()
+        is_terminal, winner = cboard.copy().simulate(node.color)
+        if winner == BLACK:
+            return 1
+        elif winner == WHITE:
+            return -1
+        else:
+            return 0
 
     def backpropogation(self, node, eval):
         current = node
@@ -136,6 +145,7 @@ class MCTSUCT:
             current.incNumVisits()
             current.setEval(eval)
             current = current.parent
+            # eval = -eval
 
 def run() -> None:
     """

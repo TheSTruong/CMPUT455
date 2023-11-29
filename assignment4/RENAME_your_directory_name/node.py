@@ -3,6 +3,14 @@ import math
 from board_base import opponent
 from board import GoBoard
 import random
+import collections
+
+class PreRootNode:
+    def __init__(self):
+        self.parent = None
+        self.childVisits = collections.defaultdict(float)
+        self.childEvals = collections.defaultdict(float)
+
 
 class Node:
     def __init__(self, board, color, move, parent=None):
@@ -25,8 +33,8 @@ class Node:
         cboard.play_move(move, self.color)
         self.children[move] = Node(cboard, opponent(self.color), move, self)
     
-    def bestMove(self):
-        return max(self.childEvals, key=self.childEvals.get)
+    def bestMove(self, maxNode):
+        return max(self.childEvals, key=self.childEvals.get) if maxNode else min(self.childEvals, key=self.childEvals.get)
             
     def bestChild(self, exploitationConstant, maxNode):
         values = {}
