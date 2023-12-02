@@ -91,8 +91,8 @@ class MCTSUCT:
         self.color = color
         self.moves = self.board.get_empty_points()
         self.root = Node(board, color, move=None, parent=PreRootNode())
-        self.numSims = 1000
-        self.explorationConstant = 1.41 # 0.5 was okay
+        self.numSims = 5000
+        self.explorationConstant = 1.41#1.41 # 0.5 was okay
 
     def genmove(self):
         for _ in range(self.numSims):
@@ -107,7 +107,10 @@ class MCTSUCT:
             maxNode = True
         else:
             maxNode = False
-        bestMove = self.root.bestMove(maxNode)
+        try:
+            bestMove = self.root.bestMove(maxNode)
+        except ValueError:
+            bestMove = 'pass'
         print(bestMove)
         return bestMove
     
@@ -120,6 +123,8 @@ class MCTSUCT:
             isMaxNode = False
         while current.expanded:
             bestMove = current.bestChild(self.explorationConstant, isMaxNode) # move selection based on tree policy
+            if bestMove is None: # reached a terminal node
+                return current
             if bestMove not in current.children:
                 current.addChild(bestMove)
             current = current.children[bestMove]

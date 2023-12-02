@@ -6,10 +6,10 @@ player2='ab_player/Ninuki-ab.py'
 
 #Change the timeout to test different time limits
 #We will use a 60 second timeout for testing your submission
-timeout=5
+timeout=60
 
 #Change the number of games played by the script
-numGames = 10
+numGames = 2
 
 win1=0
 win2=0

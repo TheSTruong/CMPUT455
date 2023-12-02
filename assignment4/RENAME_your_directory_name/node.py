@@ -34,7 +34,7 @@ class Node:
         self.children[move] = Node(cboard, opponent(self.color), move, self)
     
     def bestMove(self, maxNode):
-        return max(self.childEvals, key=self.childEvals.get) if maxNode else min(self.childEvals, key=self.childEvals.get)
+        return max(self.childVisits, key=self.childVisits.get)
             
     def bestChild(self, exploitationConstant, maxNode):
         values = {}
@@ -46,10 +46,13 @@ class Node:
                 values[key] = (Q + exploitTerm)
             else:
                 values[key] = (Q - exploitTerm)
-        if maxNode:
-            return max(values, key=values.get)
-        else:
-            return min(values, key=values.get)
+        try:
+            if maxNode:
+                return max(values, key=values.get)
+            else:
+                return min(values, key=values.get)
+        except ValueError:
+            return None # is terminal node
     
     def incNumVisits(self):
         self.parent.childVisits[self.move] += 1
