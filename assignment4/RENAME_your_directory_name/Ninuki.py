@@ -56,7 +56,8 @@ class A4SubmissionPlayer(GoEngine):
         Further reasonable constraints to prevent abuse may be imposed as we become aware of them.
         """
         GoEngine.__init__(self, "Go0", 1.0)
-        self.time_limit = 60    # TODO: Need to give it a few more second to be safe
+        self.time_limit = 55    # TODO: Need to give it a few more second to be safe
+        signal.signal(signal.SIGALRM, timeout_handler)
 
     def set_time_limit(self, time_limit):
         self.time_limit = time_limit
@@ -68,17 +69,19 @@ class A4SubmissionPlayer(GoEngine):
         """
         color = self.color_to_int(color)
         mcts = MCTSUCT(board, color)
-        move_pt = mcts.genmove()
-        move_coord = format_point(point_to_coord(move_pt, board.size)).lower()
-        return move_coord
         try:
             signal.alarm(self.time_limit)    # set time_limit alarm
+            mcts.genmove()
             # use solver to get move
         except TimeoutError:
-            pass
             # what to do after time expires
+            pass
         else:
             signal.alarm(0)    # disable timelimit alarm
+        finally:
+            move_pt = mcts.get_best_move()
+            move_coord = format_point(point_to_coord(move_pt, board.size)).lower()
+            return move_coord
     
     def color_to_int(self, c: str) -> int:
         """convert character to the appropriate integer code"""
@@ -91,17 +94,17 @@ class MCTSUCT:
         self.color = color
         self.moves = self.board.get_empty_points()
         self.root = Node(board, color, move=None, parent=PreRootNode())
-        self.numSims = 5000
-        self.explorationConstant = 1.41#1.41 # 0.5 was okay
+        # self.numSims = 10000
+        self.explorationConstant = 1.41 #1.41 # 0.5 was okay
 
     def genmove(self):
-        for _ in range(self.numSims):
+        while True:
             node = self.selection()
             self.expansion(node)
             eval = self.simulation(node)
             self.backpropogation(node, eval)
     
-        self.root.pprint()
+    def get_best_move(self):
         maxNode = None
         if self.root.color == BLACK:
             maxNode = True
@@ -111,9 +114,8 @@ class MCTSUCT:
             bestMove = self.root.bestMove(maxNode)
         except ValueError:
             bestMove = 'pass'
-        print(bestMove)
         return bestMove
-    
+
     def selection(self):
         # traversing through tree to get to leaf node
         current = self.root
